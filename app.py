@@ -7,8 +7,6 @@ import tensorflow_addons as tfa
 
 import flwr as fl
 
-from collections import Counter
-
 import health_dataset as dataset
 
 import numpy as np
@@ -21,7 +19,6 @@ from keras.utils.np_utils import to_categorical
 
 import wandb
 
-from datetime import datetime
 from functools import partial
 from urllib.request import urlopen
 import requests
