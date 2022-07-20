@@ -54,6 +54,10 @@ auprc=0
 
 next_gl_model= 0 # 글로벌 모델 버전
 
+# 전역변수 초기화
+x_train =[]
+y_train=[]
+
 # FL client 상태 확인
 app = FastAPI()
 
@@ -159,7 +163,7 @@ class PatientClient(fl.client.NumPyClient):
 
 # Client Local Model 생성
 def build_model():
-    global y_train
+    global x_train, y_train
 
     # Load and compile Keras model
     # 모델 및 메트릭 정의
@@ -169,15 +173,15 @@ def build_model():
         tf.keras.metrics.Recall(name='recall'),
         tf.keras.metrics.AUC(name='auc'),
         tf.keras.metrics.AUC(name='auprc', curve='PR'), # precision-recall curve
-        tfa.metrics.F1Score(name='f1_score', num_classes=5, average='micro'),
+        tfa.metrics.F1Score(name='f1_score', num_classes=len(y_train[0]), average='micro'),
     ]
 
     model = tf.keras.Sequential([
         tf.keras.layers.Dense(
             16, activation='relu',
-            input_shape=(6,)),
+            input_shape=(x_train.shape[-1],)),
         tf.keras.layers.Dropout(0.5),
-        tf.keras.layers.Dense(5, activation='sigmoid'),
+        tf.keras.layers.Dense(len(y_train[0]), activation='sigmoid'),
     ])
 
     model.compile(
@@ -204,8 +208,6 @@ async def flclientstart(background_tasks: BackgroundTasks, Server_IP: str):
     # wandb.login(key='6266dbc809b57000d78fb8b163179a0a3d6eeb37')
     # wandb.init(entity='ccl-fl', project='fl-client', name= 'client %s_V%s'%(client_num,next_gl_model), dir='/')
 
-
-    model = build_model()
     logging.info('bulid model')
 
     logging.info('FL start')
@@ -218,11 +220,12 @@ async def flclientstart(background_tasks: BackgroundTasks, Server_IP: str):
 
 async def flower_client_start():
     logging.info('FL learning')
-    global status
-    global model
+    global model, status, x_train, y_train
 
     # 환자별로 partition 분리 => 개별 클라이언트 적용
     (x_train, y_train), (x_test, y_test) = load_partition()
+
+    model = build_model()
 
     try:
         loop = asyncio.get_event_loop()
