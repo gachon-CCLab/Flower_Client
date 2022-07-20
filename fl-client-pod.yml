@@ -29,7 +29,7 @@ spec:
               - containerPort: 8002
             env:
             - name: REPO_URL
-              value: "https://github.com/gachon-CCLab/Flower-client.git"
+              value: "https://github.com/gachon-CCLab/Flower_client.git"
             - name: GIT_TAG
               value: "master"
             - name: GRPC_POLL_STRATEGY
