@@ -151,10 +151,10 @@ class PatientClient(fl.client.NumPyClient):
         print('')
 
         # Evaluate global model parameters on the local test data and return results
-        loss, accuracy, precision, recall, auc = self.model.evaluate(self.x_test, self.y_test, 32, steps=steps)
+        loss, accuracy, precision, recall, auc, auprc, f1_score = self.model.evaluate(self.x_test, self.y_test, 32, steps=steps)
         num_examples_test = len(self.x_test)
 
-        return loss, num_examples_test, {"accuracy": accuracy, "precision": precision, "recall": recall, "auc": auc}
+        return loss, num_examples_test, {"accuracy": accuracy, "precision": precision, "recall": recall, "auc": auc, "auprc": auprc, "f1_score":f1_score}
         # return loss, num_examples_test, {"accuracy": accuracy, "precision": precision, "recall": recall, "auc": auc, 'f1_score': f1_score, 'auprc': auprc}
 
 # Client Local Model 생성
