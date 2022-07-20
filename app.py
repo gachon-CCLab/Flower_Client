@@ -36,6 +36,9 @@ logger = logging.getLogger(__name__)
 # TF warning log 필터링
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
+# CPU만 사용
+os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+
 # client pod number 추출
 pod_name = os.environ['MY_POD_ID'].split('-')
 client_num = int(pod_name[3]) # client 번호
