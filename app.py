@@ -54,10 +54,6 @@ auprc=0
 
 next_gl_model= 0 # 글로벌 모델 버전
 
-# 전역변수 초기화
-x_train =[]
-y_train=[]
-
 # FL client 상태 확인
 app = FastAPI()
 
@@ -162,8 +158,7 @@ class PatientClient(fl.client.NumPyClient):
         # return loss, num_examples_test, {"accuracy": accuracy, "precision": precision, "recall": recall, "auc": auc, 'f1_score': f1_score, 'auprc': auprc}
 
 # Client Local Model 생성
-def build_model():
-    global x_train, y_train
+def build_model(x_train, y_train):
 
     # Load and compile Keras model
     # 모델 및 메트릭 정의
@@ -225,7 +220,7 @@ async def flower_client_start():
     # 환자별로 partition 분리 => 개별 클라이언트 적용
     (x_train, y_train), (x_test, y_test) = load_partition()
 
-    model = build_model()
+    model = build_model(x_train, y_train)
 
     try:
         loop = asyncio.get_event_loop()
