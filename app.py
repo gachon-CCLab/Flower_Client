@@ -97,7 +97,7 @@ class PatientClient(fl.client.NumPyClient):
         num_rounds: int = config["num_rounds"]
 
         # wandb에 파라미터값 upload
-        # wandb.config.update({"num_rounds": num_rounds, "epochs": epochs,"batch_size": batch_size, "client_num": client_num})
+        wandb.config.update({"num_rounds": num_rounds, "epochs": epochs,"batch_size": batch_size, "client_num": client_num})
 
         # Train the model using hyperparameters from config
         history = self.model.fit(
@@ -130,7 +130,7 @@ class PatientClient(fl.client.NumPyClient):
         # print(history.history)
 
         # local model의 validation set  성능지표 wandb에 upload
-        # wandb.log({"loss": loss, "accuracy": accuracy, "precision": precision, "recall": recall, "auc":auc, "auprc":auprc,"f1_score": f1_score})        
+        wandb.log({"loss": loss, "accuracy": accuracy, "precision": precision, "recall": recall, "auc":auc, "auprc":auprc,"f1_score": f1_score})        
 
         # local model의 validation set 성능지표 wandb에 upload
         # wandb.log({"val_loss": val_loss, "val_accuracy": val_accuracy, "val_precision": val_precision, "val_recall": val_recall, "val_auc":val_auc, "val_auprc":val_auprc, "val_f1_score": val_f1_score})
@@ -200,8 +200,8 @@ async def flclientstart(background_tasks: BackgroundTasks, Server_IP: str):
     global model
 
     # wandb login and init
-    # wandb.login(key='6266dbc809b57000d78fb8b163179a0a3d6eeb37')
-    # wandb.init(entity='ccl-fl', project='fl-client', name= 'client %s_V%s'%(client_num,next_gl_model), dir='/')
+    wandb.login(key='6266dbc809b57000d78fb8b163179a0a3d6eeb37')
+    wandb.init(entity='ccl-fl', project='fl-client', name= 'client %s_V%s'%(client_num,next_gl_model), dir='/')
 
     logging.info('bulid model')
 
@@ -272,7 +272,7 @@ async def notify_fin():
     global status, loss, accuracy, precision, recall, auc, auprc, f1_score, next_gl_model
     
     # wandb 종료
-    # wandb.finish()
+    wandb.finish()
     
     status.FL_client_start = False
 
@@ -297,7 +297,7 @@ async def notify_fail():
     global status
 
     # wandb 종료
-    # wandb.finish()
+    wandb.finish()
 
     logging.info('notify_fail start')
 
