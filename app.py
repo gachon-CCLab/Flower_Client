@@ -282,7 +282,7 @@ async def notify_fin():
     "recall": recall, "auc": auc, "auprc": auprc, "f1_score": f1_score, "next_gl_model": next_gl_model}
     json_result = json.dumps(result)
     print(json_result)
-    print('"{"client_num": ' + str(client_num) + ', "log": "' + str(json_result)+'"}"')
+    print('{"client_num": ' + str(client_num) + ', "log": "' + str(json_result)+'"}')
 
     loop = asyncio.get_event_loop()
     future2 = loop.run_in_executor(None, requests.get, 'http://localhost:8003/trainFin')
