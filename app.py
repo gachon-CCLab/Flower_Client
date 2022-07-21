@@ -277,10 +277,11 @@ async def notify_fin():
     status.FL_client_start = False
 
     # 최종 성능 결과
-    result = {"loss":loss, "accuracy":accuracy, "precision": precision, 
-    "recall": recall, "auc": auc, "auprc": auprc, "f1_score":f1_score, "next_gl_model":next_gl_model}
+    result = {"loss": loss, "accuracy": accuracy, "precision": precision, 
+    "recall": recall, "auc": auc, "auprc": auprc, "f1_score": f1_score, "next_gl_model": next_gl_model}
     json_result = json.dumps(result)
     print(json_result)
+    print(str(json_result))
 
     loop = asyncio.get_event_loop()
     future2 = loop.run_in_executor(None, requests.get, 'http://localhost:8003/trainFin')
