@@ -139,6 +139,7 @@ class PatientClient(fl.client.NumPyClient):
 
     def evaluate(self, parameters, config):
         """Evaluate parameters on the locally held test set."""
+        global status, loss, accuracy, precision, recall, auc, auprc, f1_score, next_gl_model
 
         # Update local model with global parameters
         self.model.set_weights(parameters)
@@ -281,7 +282,7 @@ async def notify_fin():
     "recall": recall, "auc": auc, "auprc": auprc, "f1_score": f1_score, "next_gl_model": next_gl_model}
     json_result = json.dumps(result)
     print(json_result)
-    print('log - ' + str(json_result))
+    print('{"client_num": ' + str(client_num) + ', "log": ' + str(json_result)+'}')
 
     loop = asyncio.get_event_loop()
     future2 = loop.run_in_executor(None, requests.get, 'http://localhost:8003/trainFin')
@@ -345,7 +346,6 @@ def load_partition():
     return (train_df, train_labels), (test_df,test_labels)
 
 if __name__ == "__main__":
-    
     try:
         # client api 생성 => client manager와 통신하기 위함
         uvicorn.run("app:app", host='0.0.0.0', port=8002, reload=True)
