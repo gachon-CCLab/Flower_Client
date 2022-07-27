@@ -202,7 +202,7 @@ async def flclientstart(background_tasks: BackgroundTasks, Server_IP: str):
 
     # wandb login and init
     wandb.login(key='6266dbc809b57000d78fb8b163179a0a3d6eeb37')
-    wandb.init(entity='ccl-fl', project='fl-client', name= 'client %s_V%s'%(client_num,next_gl_model), dir='/')
+    wandb.init(entity='ccl-fl', project='fl-client-r10', name= 'client %s_V%s'%(client_num,next_gl_model), dir='/')
 
     logging.info('bulid model')
 
