@@ -341,9 +341,9 @@ def load_partition():
     test_labels = to_categorical(y_test, num_classes)
 
     train_features = X_train.astype('float32') / 255.0
-    test_fetures = X_test.astype('float32') / 255.0
+    test_features = X_test.astype('float32') / 255.0
 
-    return (train_features, train_labels), (train_features, test_labels)
+    return (train_features, train_labels), (test_features, test_labels)
 
 if __name__ == "__main__":
     try:

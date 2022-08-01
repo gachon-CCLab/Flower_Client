@@ -7,7 +7,7 @@ spec:
   selector:
     matchLabels:
       app: fl-client
-  replicas: 10 # tells deployment to run 2 pods matching the template
+  replicas: 5 # tells deployment to run 2 pods matching the template
   template:
     metadata:
       labels:
