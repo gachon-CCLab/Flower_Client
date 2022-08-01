@@ -1,6 +1,6 @@
 # https://github.com/adap/flower/tree/main/examples/advanced_tensorflow 참조
 
-import os, logging, json
+import os, time, logging, json
 
 import tensorflow as tf
 import tensorflow_addons as tfa
@@ -20,6 +20,7 @@ from keras.utils.np_utils import to_categorical
 import wandb
 
 from functools import partial
+from urllib.request import urlopen
 import requests
 from fastapi import FastAPI, BackgroundTasks
 import asyncio
@@ -197,7 +198,7 @@ async def flclientstart(background_tasks: BackgroundTasks, Server_IP: str):
 
     # wandb login and init
     wandb.login(key='6266dbc809b57000d78fb8b163179a0a3d6eeb37')
-    wandb.init(entity='ccl-fl', project='fl-client', name= 'client %s_V%s'%(client_num,next_gl_model), dir='/')
+    wandb.init(entity='ccl-fl', project='fl-client-r10', name= 'client %s_V%s'%(client_num,next_gl_model), dir='/')
 
     logging.info('bulid model')
 
@@ -313,20 +314,21 @@ def load_partition():
     # Load the dataset partitions
     global next_gl_model, client_num
 
-    # Cifar 10 데이터셋 불러오기
-    (X_train, y_train), (X_test, y_test) = tf.keras.datasets.cifar10.load_data()
-
     # client_num 값으로 데이터셋 나누기
-    (X_train, y_train) = X_train[client_num*100:(client_num+1)*100], y_train[client_num*100:(client_num+1)*100]
-    (X_test, y_test) = 	X_test[client_num*100:(client_num+1)*100], y_test[client_num*100:(client_num+1)*100]
+    # 환자 개인 데이터 추출
+    data, p_list = dataset.data_load()
+    p_df = data[data.subject_id==p_list[client_num]]
 
-    # class 설정
-    num_classes = 10
+    # label 까지 포함 dataframe
+    train_df, test_df = train_test_split(p_df.iloc[:,1:], test_size=0.1)
 
-    # one-hot encoding class 범위 지정
+    # one-hot encoding 범위 지정 => 4개 label
     # Client마다 보유 Label이 다르므로 => 전체 label 수를 맞춰야 함
-    train_labels = to_categorical(y_train, num_classes)
-    test_labels = to_categorical(y_test, num_classes)
+    train_labels = to_categorical(np.array(train_df.pop('label')),4)
+    test_labels = to_categorical(np.array(test_df.pop('label')),4)
+
+    train_features = np.array(train_df)
+    test_features = np.array(test_df)
 
     # 정규화
     # standard scaler
@@ -337,7 +339,7 @@ def load_partition():
     train_features = np.clip(train_features, -5, 5)
     test_features = np.clip(test_features, -5, 5)
 
-    return (train_features, train_labels), (test_features,test_labels)
+    return (train_df, train_labels), (test_df,test_labels)
 
 if __name__ == "__main__":
     try:
