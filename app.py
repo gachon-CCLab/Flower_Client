@@ -168,11 +168,10 @@ def build_model(x_train, y_train):
 
     # model 생성
     model = tf.keras.Sequential([
-        tf.keras.layers.Dense(
-            64, 3, 3, 
-                    activation='relu',
-                    input_shape=(x_train.shape[1],x_train.shape[2], x_train.shape[-1])),
-        tf.keras.layers.Dropout(0.5),
+        tf.keras.layers.Conv2D(
+                64, 3, 3, 
+                activation='relu',
+                input_shape=(x_train.shape[1],x_train.shape[2], x_train.shape[-1])),
         tf.keras.layers.Dropout(0.5),
         tf.keras.layers.Dense(len(y_train[0]), activation='sigmoid'),
     ])
