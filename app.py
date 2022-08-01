@@ -14,6 +14,9 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 
+from keras.models import Sequential
+from keras.layers import Conv2D, MaxPool2D, Dropout, Flatten, Dense
+from keras.optimizers import Adam
 # keras에서 내장 함수 지원(to_categofical())
 from keras.utils.np_utils import to_categorical
 
@@ -154,7 +157,7 @@ class PatientClient(fl.client.NumPyClient):
         # return loss, num_examples_test, {"accuracy": accuracy, "precision": precision, "recall": recall, "auc": auc, 'f1_score': f1_score, 'auprc': auprc}
 
 # Client Local Model 생성
-def build_model(x_train, y_train):
+def build_model():
 
     # 모델 및 메트릭 정의
     METRICS = [
@@ -163,23 +166,31 @@ def build_model(x_train, y_train):
         tf.keras.metrics.Recall(name='recall'),
         tf.keras.metrics.AUC(name='auc'),
         tf.keras.metrics.AUC(name='auprc', curve='PR'), # precision-recall curve
-        tfa.metrics.F1Score(name='f1_score', num_classes=len(y_train[0]), average='micro'),
+        tfa.metrics.F1Score(name='f1_score', num_classes=10, average='micro'),
     ]
 
     # model 생성
-    model = tf.keras.Sequential([
-        tf.keras.layers.Conv2D(
-                64, 3, 3, 
-                activation='relu',
-                input_shape=(x_train.shape[1],x_train.shape[2], x_train.shape[-1])),
-        tf.keras.layers.Dropout(0.5),
-        tf.keras.layers.Dense(len(y_train[0]), activation='sigmoid'),
-    ])
+    model = Sequential()
 
-    model.compile(
-        optimizer=tf.keras.optimizers.Adam(learning_rate=1e-3),
-        loss=tf.keras.losses.BinaryCrossentropy(),
-        metrics=METRICS)
+    # Convolutional Block (Conv-Conv-Pool-Dropout)
+    model.add(Conv2D(32, (3, 3), activation='relu', padding='same', input_shape=(32, 32, 3)))
+    model.add(Conv2D(32, (3, 3), activation='relu', padding='same'))
+    model.add(MaxPool2D(pool_size=(2, 2)))
+    model.add(Dropout(0.25))
+
+    # Convolutional Block (Conv-Conv-Pool-Dropout)
+    model.add(Conv2D(64, (3, 3), activation='relu', padding='same'))
+    model.add(Conv2D(64, (3, 3), activation='relu', padding='same'))
+    model.add(MaxPool2D(pool_size=(2, 2)))
+    model.add(Dropout(0.25))
+
+    # Classifying
+    model.add(Flatten())
+    model.add(Dense(512, activation='relu'))
+    model.add(Dropout(0.5))
+    model.add(Dense(10, activation='softmax'))
+
+    model.compile(loss='categorical_crossentropy', optimizer=Adam(lr=0.001), metrics=METRICS)
 
     return model
 
@@ -217,7 +228,7 @@ async def flower_client_start():
     # 환자별로 partition 분리 => 개별 클라이언트 적용
     (x_train, y_train), (x_test, y_test) = load_partition()
 
-    model = build_model(x_train, y_train)
+    model = build_model()
 
     try:
         loop = asyncio.get_event_loop()
@@ -329,8 +340,10 @@ def load_partition():
     train_labels = to_categorical(y_train, num_classes)
     test_labels = to_categorical(y_test, num_classes)
 
+    train_features = X_train.astype('float32') / 255.0
+    test_fetures = X_test.astype('float32') / 255.0
 
-    return (X_train, train_labels), (X_test,test_labels)
+    return (train_features, train_labels), (train_features, test_labels)
 
 if __name__ == "__main__":
     try:
