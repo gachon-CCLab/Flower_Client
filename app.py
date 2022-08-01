@@ -189,7 +189,7 @@ def build_model():
     model.add(Dropout(0.5))
     model.add(Dense(10, activation='softmax'))
 
-    model.compile(loss='categorical_crossentropy', optimizer=tf.keras.optimizers.Adam(lr=0.001), metrics=METRICS)
+    model.compile(loss='categorical_crossentropy', optimizer=tf.keras.optimizers.Adam(learning_rate=0.001), metrics=METRICS)
 
     return model
 
