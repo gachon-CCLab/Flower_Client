@@ -16,7 +16,6 @@ from sklearn.preprocessing import StandardScaler
 
 from keras.models import Sequential
 from keras.layers import Conv2D, MaxPool2D, Dropout, Flatten, Dense
-from keras.optimizers import Adam
 # keras에서 내장 함수 지원(to_categofical())
 from keras.utils.np_utils import to_categorical
 
@@ -190,7 +189,7 @@ def build_model():
     model.add(Dropout(0.5))
     model.add(Dense(10, activation='softmax'))
 
-    model.compile(loss='categorical_crossentropy', optimizer=Adam(lr=0.001), metrics=METRICS)
+    model.compile(loss='categorical_crossentropy', optimizer=tf.keras.optimizers.Adam(lr=0.001), metrics=METRICS)
 
     return model
 
