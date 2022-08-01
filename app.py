@@ -330,16 +330,8 @@ def load_partition():
     train_labels = to_categorical(y_train, num_classes)
     test_labels = to_categorical(y_test, num_classes)
 
-    # 정규화
-    # standard scaler
-    scaler = StandardScaler()
-    train_features = scaler.fit_transform(X_train)
-    test_features = scaler.transform(X_test)
 
-    train_features = np.clip(train_features, -5, 5)
-    test_features = np.clip(test_features, -5, 5)
-
-    return (train_features, train_labels), (test_features,test_labels)
+    return (X_train, train_labels), (X_test,test_labels)
 
 if __name__ == "__main__":
     try:
