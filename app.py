@@ -317,8 +317,8 @@ def load_partition():
     (X_train, y_train), (X_test, y_test) = tf.keras.datasets.cifar10.load_data()
 
     # client_num 값으로 데이터셋 나누기
-    (X_train, y_train) = X_train[client_num*100:(client_num+1)*100], y_train[client_num*100:(client_num+1)*100]
-    (X_test, y_test) = 	X_test[client_num*100:(client_num+1)*100], y_test[client_num*100:(client_num+1)*100]
+    (X_train, y_train) = X_train[client_num*100:(client_num+1)*500], y_train[client_num*100:(client_num+1)*500]
+    (X_test, y_test) = 	X_test[client_num*100:(client_num+1)*500], y_test[client_num*100:(client_num+1)*500]
 
     # class 설정
     num_classes = 10
