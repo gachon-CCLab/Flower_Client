@@ -333,8 +333,8 @@ def load_partition():
     # 정규화
     # standard scaler
     scaler = StandardScaler()
-    train_features = scaler.fit_transform(train_features)
-    test_features = scaler.transform(test_features)
+    train_features = scaler.fit_transform(X_train)
+    test_features = scaler.transform(X_test)
 
     train_features = np.clip(train_features, -5, 5)
     test_features = np.clip(test_features, -5, 5)
