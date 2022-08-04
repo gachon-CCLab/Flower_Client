@@ -6,7 +6,6 @@ import tensorflow as tf
 import tensorflow_addons as tfa
 
 import flwr as fl
-import time
 from keras.models import Sequential
 from keras.layers import Conv2D, MaxPool2D, Dropout, Flatten, Dense
 # keras에서 내장 함수 지원(to_categofical())
