@@ -132,7 +132,7 @@ class PatientClient(fl.client.NumPyClient):
 
     def evaluate(self, parameters, config):
         """Evaluate parameters on the locally held test set."""
-        global status, loss, accuracy, precision, recall, auc, auprc, f1_score, next_gl_model
+        global status, loss, accuracy, precision, recall, auc, auprc, f1_score
 
         # Update local model with global parameters
         self.model.set_weights(parameters)
@@ -195,8 +195,16 @@ def get_info():
 
 @app.get("/start/{Server_IP}")
 async def flclientstart(background_tasks: BackgroundTasks, Server_IP: str):
-    global status
-    global model
+    global status, model, next_gl_model
+    
+    # client_manager 주소
+    client_res = requests.get('http://localhost:8003/info/')
+
+    # 최신 global model 버전
+    latest_gl_model_v = client_res.json()['GL_Model_V']
+    
+    # 다음 global model 버전
+    next_gl_model = latest_gl_model_v + 1
 
     # wandb login and init
     wandb.login(key='6266dbc809b57000d78fb8b163179a0a3d6eeb37')
@@ -246,15 +254,6 @@ async def model_save():
     
     global model, next_gl_model
     try:
-        # # client_manager 주소
-        client_res = requests.get('http://localhost:8003/info/')
-
-        # # 최신 global model 버전
-        latest_gl_model_v = client_res.json()['GL_Model_V']
-        
-        # 다음 global model 버전
-        next_gl_model = latest_gl_model_v + 1
-
         model.save('/model/model_V%s.h5'%next_gl_model)
         await notify_fin()
         model=None
@@ -314,7 +313,7 @@ async def notify_fail():
 
 def load_partition():
     # Load the dataset partitions
-    global next_gl_model, client_num
+    global client_num
 
     # Cifar 10 데이터셋 불러오기
     (X_train, y_train), (X_test, y_test) = tf.keras.datasets.cifar10.load_data()
