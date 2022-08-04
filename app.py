@@ -339,6 +339,7 @@ def load_partition():
     train_labels = to_categorical(y_train, num_classes)
     test_labels = to_categorical(y_test, num_classes)
 
+    # 전처리
     train_features = X_train.astype('float32') / 255.0
     test_features = X_test.astype('float32') / 255.0
 
