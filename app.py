@@ -7,13 +7,6 @@ import tensorflow_addons as tfa
 
 import flwr as fl
 
-import health_dataset as dataset
-
-import numpy as np
-
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler
-
 from keras.models import Sequential
 from keras.layers import Conv2D, MaxPool2D, Dropout, Flatten, Dense
 # keras에서 내장 함수 지원(to_categofical())
