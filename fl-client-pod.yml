@@ -3,10 +3,10 @@ kind: StatefulSet
 metadata:
   name: fl-client-ccl
 spec:
-  serviceName: "fl-client-ccl"
+  serviceName: "fl-client"
   selector:
     matchLabels:
-      app: fl-client-ccl
+      app: fl-client
   replicas: 4 # tells deployment to run 2 pods matching the template
   template:
     metadata:
