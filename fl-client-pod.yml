@@ -54,7 +54,7 @@ spec:
               - containerPort: 8003
             env:
             - name: REPO_URL
-              value: "https://github.com/gachon-CCLab/Health_Client_Manager.git"
+              value: "https://github.com/gachon-CCLab/FL_Client_Manager.git"
             - name: GIT_TAG
               value: "master"
             volumeMounts:
