@@ -36,6 +36,9 @@ os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 pod_name = os.environ['MY_POD_ID'].split('-')
 client_num = int(pod_name[3]) # client 번호
 
+# wandb controller
+wb_controller = 0 
+
 # 성능지표 초기화
 loss = 0
 accuracy = 0
@@ -68,11 +71,6 @@ class PatientClient(fl.client.NumPyClient):
         self.model = model
         self.x_train, self.y_train = x_train, y_train
         self.x_test, self.y_test = x_test, y_test
-
-        # Client 학습 로그 모니터링
-        # wandb login and init
-        wandb.login(key='6266dbc809b57000d78fb8b163179a0a3d6eeb37')
-        wandb.init(entity='ccl-fl', project='fl-client', name= 'client %s_V%s'%(client_num,next_gl_model), dir='/')
 
     def get_parameters(self):
         """Get parameters of the local model."""
@@ -194,7 +192,14 @@ def get_info():
 
 @app.get("/start/{Server_IP}")
 async def flclientstart(background_tasks: BackgroundTasks, Server_IP: str):
-    global status, model, next_gl_model
+    global status, model, next_gl_model, wb_controller
+
+    if wb_controller ==0:
+        # wandb login and init
+        wandb.login(key='6266dbc809b57000d78fb8b163179a0a3d6eeb37')
+        wandb.init(entity='ccl-fl', project='fl-client', name= 'client %s_V%s'%(client_num,next_gl_model), dir='/')
+
+        wb_controller+=1
 
     # client_manager 주소
     client_res = requests.get('http://localhost:8003/info/')
@@ -262,10 +267,13 @@ async def model_save():
 
 # client manager에서 train finish 정보 확인
 async def notify_fin():
-    global status, loss, accuracy, precision, recall, auc, auprc, f1_score, next_gl_model
+    global status, loss, accuracy, precision, recall, auc, auprc, f1_score, next_gl_model, wb_controller
     
     # wandb 종료
     wandb.finish()
+
+    # 다음 연합학습부터 wandb 재수행
+    wb_controller=0 
     
     status.FL_client_start = False
 
@@ -289,9 +297,6 @@ async def notify_fin():
 # client manager에서 train fail 정보 확인
 async def notify_fail():
     global status
-
-    # wandb 종료
-    wandb.finish()
 
     logging.info('notify_fail start')
 
