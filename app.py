@@ -199,7 +199,7 @@ async def flclientstart(background_tasks: BackgroundTasks, Server_IP: str):
         wandb.login(key='6266dbc809b57000d78fb8b163179a0a3d6eeb37')
         wandb.init(entity='ccl-fl', project='fl-client', name= 'client %s_V%s'%(client_num,next_gl_model), dir='/')
 
-        wb_controller+=1
+        wb_controller = 1
 
     # client_manager 주소
     client_res = requests.get('http://localhost:8003/info/')
