@@ -69,6 +69,11 @@ class PatientClient(fl.client.NumPyClient):
         self.x_train, self.y_train = x_train, y_train
         self.x_test, self.y_test = x_test, y_test
 
+        # Client 학습 로그 모니터링
+        # wandb login and init
+        wandb.login(key='6266dbc809b57000d78fb8b163179a0a3d6eeb37')
+        wandb.init(entity='ccl-fl', project='fl-client', name= 'client %s_V%s'%(client_num,next_gl_model), dir='/')
+
     def get_parameters(self):
         """Get parameters of the local model."""
         raise Exception("Not implemented (server-side parameter initialization)")
@@ -218,10 +223,6 @@ async def flower_client_start():
     (x_train, y_train), (x_test, y_test) = load_partition()
 
     model = build_model()
-
-    # wandb login and init
-    wandb.login(key='6266dbc809b57000d78fb8b163179a0a3d6eeb37')
-    wandb.init(entity='ccl-fl', project='fl-client', name= 'client %s_V%s'%(client_num,next_gl_model), dir='/')
     
     try:
         loop = asyncio.get_event_loop()
