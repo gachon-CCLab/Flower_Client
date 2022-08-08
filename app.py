@@ -93,7 +93,7 @@ class PatientClient(fl.client.NumPyClient):
         num_rounds: int = config["num_rounds"]
 
         # wandb에 파라미터값 upload
-        wandb.config.update({"num_rounds": num_rounds, "epochs": epochs,"batch_size": batch_size, "client_num": client_num})
+        # wandb.config.update({"num_rounds": num_rounds, "epochs": epochs,"batch_size": batch_size, "client_num": client_num})
 
         # Train the model using hyperparameters from config
         history = self.model.fit(
@@ -126,10 +126,8 @@ class PatientClient(fl.client.NumPyClient):
         # print(history.history)
 
         # local model의 validation set  성능지표 wandb에 upload
-        wandb.log({"loss": loss, "accuracy": accuracy, "precision": precision, "recall": recall, "auc":auc, "auprc":auprc,"f1_score": f1_score})        
+        # wandb.log({"loss": loss, "accuracy": accuracy, "precision": precision, "recall": recall, "auc":auc, "auprc":auprc,"f1_score": f1_score})        
 
-        # local model의 validation set 성능지표 wandb에 upload
-        # wandb.log({"val_loss": val_loss, "val_accuracy": val_accuracy, "val_precision": val_precision, "val_recall": val_recall, "val_auc":val_auc, "val_auprc":val_auprc, "val_f1_score": val_f1_score})
 
         return parameters_prime, num_examples_train, results
 
@@ -194,12 +192,12 @@ def get_info():
 async def flclientstart(background_tasks: BackgroundTasks, Server_IP: str):
     global status, model, next_gl_model, wb_controller
 
-    if wb_controller ==0:
-        # wandb login and init
-        wandb.login(key='6266dbc809b57000d78fb8b163179a0a3d6eeb37')
-        wandb.init(entity='ccl-fl', project='fl-client', name= 'client %s_V%s'%(client_num,next_gl_model), dir='/')
+    # if wb_controller ==0:
+    #     # wandb login and init
+    #     wandb.login(key='6266dbc809b57000d78fb8b163179a0a3d6eeb37')
+    #     wandb.init(entity='ccl-fl', project='fl-client', name= 'client %s_V%s'%(client_num,next_gl_model), dir='/')
 
-        wb_controller = 1
+    #     wb_controller = 1
 
     # client_manager 주소
     client_res = requests.get('http://localhost:8003/info/')
@@ -270,7 +268,7 @@ async def notify_fin():
     global status, loss, accuracy, precision, recall, auc, auprc, f1_score, next_gl_model, wb_controller
     
     # wandb 종료
-    wandb.finish()
+    # wandb.finish()
 
     # 다음 연합학습부터 wandb 재수행
     wb_controller=0 
