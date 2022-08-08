@@ -169,12 +169,6 @@ def build_model():
     model.add(MaxPool2D(pool_size=(2, 2)))
     model.add(Dropout(0.25))
 
-    # Convolutional Block (Conv-Conv-Pool-Dropout)
-    model.add(Conv2D(64, (3, 3), activation='relu', padding='same'))
-    model.add(Conv2D(64, (3, 3), activation='relu', padding='same'))
-    model.add(MaxPool2D(pool_size=(2, 2)))
-    model.add(Dropout(0.25))
-
     # Classifying
     model.add(Flatten())
     model.add(Dense(512, activation='relu'))
@@ -196,7 +190,7 @@ def get_info():
 @app.get("/start/{Server_IP}")
 async def flclientstart(background_tasks: BackgroundTasks, Server_IP: str):
     global status, model, next_gl_model
-    
+
     # client_manager 주소
     client_res = requests.get('http://localhost:8003/info/')
 
@@ -205,10 +199,6 @@ async def flclientstart(background_tasks: BackgroundTasks, Server_IP: str):
     
     # 다음 global model 버전
     next_gl_model = latest_gl_model_v + 1
-
-    # wandb login and init
-    wandb.login(key='6266dbc809b57000d78fb8b163179a0a3d6eeb37')
-    wandb.init(entity='ccl-fl', project='fl-client', name= 'client %s_V%s'%(client_num,next_gl_model), dir='/')
 
     logging.info('bulid model')
 
@@ -229,6 +219,10 @@ async def flower_client_start():
 
     model = build_model()
 
+    # wandb login and init
+    wandb.login(key='6266dbc809b57000d78fb8b163179a0a3d6eeb37')
+    wandb.init(entity='ccl-fl', project='fl-client', name= 'client %s_V%s'%(client_num,next_gl_model), dir='/')
+    
     try:
         loop = asyncio.get_event_loop()
         client = PatientClient(model, x_train, y_train, x_test, y_test)
