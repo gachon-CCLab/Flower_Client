@@ -228,6 +228,7 @@ async def flower_client_start():
         client = PatientClient(model, x_train, y_train, x_test, y_test)
         # logging.info(f'fl-server-ip: {status.FL_server_IP}')
         # await asyncio.sleep(23)
+        print('server IP: ', status.FL_server_IP)
         request = partial(fl.client.start_numpy_client, server_address=status.FL_server_IP, client=client)
         await loop.run_in_executor(None, request)
 
