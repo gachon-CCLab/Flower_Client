@@ -226,7 +226,7 @@ async def flower_client_start():
 
     # 환자별로 partition 분리 => 개별 클라이언트 적용
     (x_train, y_train), (x_test, y_test) = load_partition()
-    # await asyncio.sleep(30) # data download wait
+    await asyncio.sleep(30) # data download wait
 
     model = build_model()
 
