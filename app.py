@@ -36,9 +36,6 @@ os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 pod_name = os.environ['MY_POD_ID'].split('-')
 client_num = int(pod_name[3]) # client 번호
 
-# wandb controller
-wb_controller = True 
-
 # 성능지표 초기화
 loss = 0
 accuracy = 0
@@ -93,7 +90,7 @@ class PatientClient(fl.client.NumPyClient):
         num_rounds: int = config["num_rounds"]
 
         # wandb에 파라미터값 upload
-        # wandb.config.update({"num_rounds": num_rounds, "epochs": epochs,"batch_size": batch_size, "client_num": client_num})
+        wandb.config.update({"num_rounds": num_rounds, "epochs": epochs,"batch_size": batch_size, "client_num": client_num})
 
         # Train the model using hyperparameters from config
         history = self.model.fit(
@@ -126,8 +123,10 @@ class PatientClient(fl.client.NumPyClient):
         # print(history.history)
 
         # local model의 validation set  성능지표 wandb에 upload
-        # wandb.log({"loss": loss, "accuracy": accuracy, "precision": precision, "recall": recall, "auc":auc, "auprc":auprc,"f1_score": f1_score})        
+        wandb.log({"loss": loss, "accuracy": accuracy, "precision": precision, "recall": recall, "auc":auc, "auprc":auprc,"f1_score": f1_score})        
 
+        # local model의 validation set 성능지표 wandb에 upload
+        # wandb.log({"val_loss": val_loss, "val_accuracy": val_accuracy, "val_precision": val_precision, "val_recall": val_recall, "val_auc":val_auc, "val_auprc":val_auprc, "val_f1_score": val_f1_score})
 
         return parameters_prime, num_examples_train, results
 
@@ -190,15 +189,8 @@ def get_info():
 
 @app.get("/start/{Server_IP}")
 async def flclientstart(background_tasks: BackgroundTasks, Server_IP: str):
-    global status, model, next_gl_model, wb_controller
-
-    # if wb_controller == True:
-    #     # wandb login and init
-        # wandb.login(key='6266dbc809b57000d78fb8b163179a0a3d6eeb37')
-        # wandb.init(entity='ccl-fl', project='fl-client-ccl', name= 'client %s_V%s'%(client_num,next_gl_model), dir='/')
-
-    #     wb_controller = False
-
+    global status, model, next_gl_model
+    
     # client_manager 주소
     client_res = requests.get('http://localhost:8003/info/')
 
@@ -208,8 +200,9 @@ async def flclientstart(background_tasks: BackgroundTasks, Server_IP: str):
     # 다음 global model 버전
     next_gl_model = latest_gl_model_v + 1
 
-    # wandb.login(key='6266dbc809b57000d78fb8b163179a0a3d6eeb37')
-    # wandb.init(entity='ccl-fl', project='fl-client-ccl', name= 'client %s_V%s'%(client_num,next_gl_model), dir='/')
+    # wandb login and init
+    wandb.login(key='6266dbc809b57000d78fb8b163179a0a3d6eeb37')
+    wandb.init(entity='ccl-fl', project='fl-client-ccl', name= 'client %s_V%s'%(client_num,next_gl_model), dir='/')
 
     logging.info('bulid model')
 
@@ -229,7 +222,7 @@ async def flower_client_start():
     (x_train, y_train), (x_test, y_test) = load_partition()
 
     model = build_model()
-    
+
     try:
         loop = asyncio.get_event_loop()
         client = PatientClient(model, x_train, y_train, x_test, y_test)
@@ -268,13 +261,10 @@ async def model_save():
 
 # client manager에서 train finish 정보 확인
 async def notify_fin():
-    global status, loss, accuracy, precision, recall, auc, auprc, f1_score, next_gl_model, wb_controller
+    global status, loss, accuracy, precision, recall, auc, auprc, f1_score, next_gl_model
     
     # wandb 종료
-    # wandb.finish()
-
-    # 다음 연합학습부터 wandb 재수행
-    wb_controller= True
+    wandb.finish()
     
     status.FL_client_start = False
 
@@ -298,6 +288,9 @@ async def notify_fin():
 # client manager에서 train fail 정보 확인
 async def notify_fail():
     global status
+
+    # wandb 종료
+    wandb.finish()
 
     logging.info('notify_fail start')
 
