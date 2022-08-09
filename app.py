@@ -50,6 +50,12 @@ next_gl_model= 0 # 글로벌 모델 버전
 # W&B 제어
 wb_controller = 0
 
+# dataset 초기회
+x_train=[]
+y_train =[]
+x_test = []
+y_test= []
+
 # FL client 상태 확인
 app = FastAPI()
 
@@ -336,10 +342,6 @@ def load_partition():
     return (train_features, train_labels), (test_features, test_labels)
 
 if __name__ == "__main__":
-    x_train=[]
-    y_train =[]
-    x_test = []
-    y_test= []
 
     try:
         # 환자별로 partition 분리 => 개별 클라이언트 적용
