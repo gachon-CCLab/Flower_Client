@@ -336,6 +336,11 @@ def load_partition():
     return (train_features, train_labels), (test_features, test_labels)
 
 if __name__ == "__main__":
+    x_train=[]
+    y_train =[]
+    x_test = []
+    y_test= []
+
     try:
         # 환자별로 partition 분리 => 개별 클라이언트 적용
         (x_train, y_train), (x_test, y_test) = load_partition()
