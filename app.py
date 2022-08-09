@@ -192,12 +192,15 @@ def get_info():
 async def flclientstart(background_tasks: BackgroundTasks, Server_IP: str):
     global status, model, next_gl_model, wb_controller
 
-    if wb_controller == True:
-        # wandb login and init
-        wandb.login(key='6266dbc809b57000d78fb8b163179a0a3d6eeb37')
-        wandb.init(entity='ccl-fl', project='fl-client-ccl', name= 'client %s_V%s'%(client_num,next_gl_model), dir='/')
+    # if wb_controller == True:
+    #     # wandb login and init
+        # wandb.login(key='6266dbc809b57000d78fb8b163179a0a3d6eeb37')
+        # wandb.init(entity='ccl-fl', project='fl-client-ccl', name= 'client %s_V%s'%(client_num,next_gl_model), dir='/')
 
-        wb_controller = False
+    #     wb_controller = False
+
+    wandb.login(key='6266dbc809b57000d78fb8b163179a0a3d6eeb37')
+    wandb.init(entity='ccl-fl', project='fl-client-ccl', name= 'client %s_V%s'%(client_num,next_gl_model), dir='/')
 
     # client_manager 주소
     client_res = requests.get('http://localhost:8003/info/')
