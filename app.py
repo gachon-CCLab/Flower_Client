@@ -47,6 +47,9 @@ auprc=0
 
 next_gl_model= 0 # 글로벌 모델 버전
 
+# W&B 제어
+wb_controller = 0
+
 # FL client 상태 확인
 app = FastAPI()
 
@@ -189,7 +192,7 @@ def get_info():
 
 @app.get("/start/{Server_IP}")
 async def flclientstart(background_tasks: BackgroundTasks, Server_IP: str):
-    global status, model, next_gl_model
+    global status, model, next_gl_model, wb_controller
     
     # client_manager 주소
     client_res = requests.get('http://localhost:8003/info/')
@@ -200,9 +203,12 @@ async def flclientstart(background_tasks: BackgroundTasks, Server_IP: str):
     # 다음 global model 버전
     next_gl_model = latest_gl_model_v + 1
 
-    # wandb login and init
-    wandb.login(key='6266dbc809b57000d78fb8b163179a0a3d6eeb37')
-    wandb.init(entity='ccl-fl', project='fl-client-ccl', name= 'client %s_V%s'%(client_num,next_gl_model), dir='/')
+    if wb_controller == 0:
+        # wandb login and init
+        wandb.login(key='6266dbc809b57000d78fb8b163179a0a3d6eeb37')
+        wandb.init(entity='ccl-fl', project='fl-client-ccl', name= 'client %s_V%s'%(client_num,next_gl_model), dir='/')
+
+        wb_controller = 1
 
     logging.info('bulid model')
 
@@ -262,11 +268,12 @@ async def model_save():
 
 # client manager에서 train finish 정보 확인
 async def notify_fin():
-    global status, loss, accuracy, precision, recall, auc, auprc, f1_score, next_gl_model
+    global status, loss, accuracy, precision, recall, auc, auprc, f1_score, next_gl_model, wb_controller
     
     # wandb 종료
     wandb.finish()
-    
+    wb_controller = 0
+
     status.FL_client_start = False
 
     # 최종 성능 결과
@@ -291,7 +298,7 @@ async def notify_fail():
     global status
 
     # wandb 종료
-    wandb.finish()
+    # wandb.finish()
 
     logging.info('notify_fail start')
 
