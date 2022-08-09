@@ -222,10 +222,7 @@ async def flclientstart(background_tasks: BackgroundTasks, Server_IP: str):
 
 async def flower_client_start():
     logging.info('FL learning')
-    global model, status, x_train, y_train
-
-    # 환자별로 partition 분리 => 개별 클라이언트 적용
-    (x_train, y_train), (x_test, y_test) = load_partition()
+    global model, status, x_train, y_train, x_test, y_test
 
     model = build_model()
 
@@ -340,6 +337,9 @@ def load_partition():
 
 if __name__ == "__main__":
     try:
+        # 환자별로 partition 분리 => 개별 클라이언트 적용
+        (x_train, y_train), (x_test, y_test) = load_partition()
+        
         # client api 생성 => client manager와 통신하기 위함
         uvicorn.run("app:app", host='0.0.0.0', port=8002, reload=True)
         
