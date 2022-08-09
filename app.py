@@ -199,9 +199,6 @@ async def flclientstart(background_tasks: BackgroundTasks, Server_IP: str):
 
     #     wb_controller = False
 
-    wandb.login(key='6266dbc809b57000d78fb8b163179a0a3d6eeb37')
-    wandb.init(entity='ccl-fl', project='fl-client-ccl', name= 'client %s_V%s'%(client_num,next_gl_model), dir='/')
-
     # client_manager 주소
     client_res = requests.get('http://localhost:8003/info/')
 
@@ -210,6 +207,9 @@ async def flclientstart(background_tasks: BackgroundTasks, Server_IP: str):
     
     # 다음 global model 버전
     next_gl_model = latest_gl_model_v + 1
+
+    wandb.login(key='6266dbc809b57000d78fb8b163179a0a3d6eeb37')
+    wandb.init(entity='ccl-fl', project='fl-client-ccl', name= 'client %s_V%s'%(client_num,next_gl_model), dir='/')
 
     logging.info('bulid model')
 
