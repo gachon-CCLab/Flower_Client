@@ -20,6 +20,11 @@ import asyncio
 import uvicorn
 from pydantic.main import BaseModel
 
+import numpy as np
+import health_dataset as dataset
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+
 # Log 포맷 설정
 logging.basicConfig(level=logging.DEBUG, format="%(asctime)s [%(levelname)8.8s] %(message)s",
                     handlers=[logging.StreamHandler()])
@@ -151,35 +156,31 @@ class PatientClient(fl.client.NumPyClient):
         # return loss, num_examples_test, {"accuracy": accuracy, "precision": precision, "recall": recall, "auc": auc, 'f1_score': f1_score, 'auprc': auprc}
 
 # Client Local Model 생성
-def build_model():
+def build_model(x_train, y_train):
 
-    # 모델 및 메트릭 정의
+     # 모델 및 메트릭 정의
     METRICS = [
         tf.keras.metrics.BinaryAccuracy(name='accuracy'),
         tf.keras.metrics.Precision(name='precision'),
         tf.keras.metrics.Recall(name='recall'),
         tf.keras.metrics.AUC(name='auc'),
         tf.keras.metrics.AUC(name='auprc', curve='PR'), # precision-recall curve
-        tfa.metrics.F1Score(name='f1_score', num_classes=10, average='micro'),
+        tfa.metrics.F1Score(name='f1_score', num_classes=len(y_train[0]), average='micro'),
     ]
 
     # model 생성
-    model = Sequential()
+    model = tf.keras.Sequential([
+        tf.keras.layers.Dense(
+            16, activation='relu',
+            input_shape=(x_train.shape[-1],)),
+        tf.keras.layers.Dropout(0.5),
+        tf.keras.layers.Dense(len(y_train[0]), activation='sigmoid'),
+    ])
 
-    # Convolutional Block (Conv-Conv-Pool-Dropout)
-    model.add(Conv2D(32, (3, 3), activation='relu', padding='same', input_shape=(32, 32, 3)))
-    model.add(Conv2D(32, (3, 3), activation='relu', padding='same'))
-    model.add(MaxPool2D(pool_size=(2, 2)))
-    model.add(Dropout(0.25))
-
-    # Classifying
-    model.add(Flatten())
-    model.add(Dense(512, activation='relu'))
-    model.add(Dropout(0.5))
-    model.add(Dense(10, activation='softmax'))
-
-    model.compile(loss='categorical_crossentropy', optimizer=tf.keras.optimizers.Adam(learning_rate=0.001), metrics=METRICS)
-
+    model.compile(
+        optimizer=tf.keras.optimizers.Adam(learning_rate=1e-3),
+        loss=tf.keras.losses.BinaryCrossentropy(),
+        metrics=METRICS)
     return model
 
 @app.on_event("startup")
@@ -206,7 +207,7 @@ async def flclientstart(background_tasks: BackgroundTasks, Server_IP: str):
     if wb_controller == 0:
         # wandb login and init
         wandb.login(key='6266dbc809b57000d78fb8b163179a0a3d6eeb37')
-        wandb.init(entity='ccl-fl', project='fl-client-ccl', name= 'client %s_V%s'%(client_num,next_gl_model), dir='/')
+        wandb.init(entity='ccl-fl', project='fl-client-news', name= 'client %s_V%s'%(client_num,next_gl_model), dir='/')
 
         wb_controller = 1
 
@@ -222,13 +223,13 @@ async def flclientstart(background_tasks: BackgroundTasks, Server_IP: str):
 
 async def flower_client_start():
     logging.info('FL learning')
-    global model, status
+    global model, status, x_train, y_train
 
     # 환자별로 partition 분리 => 개별 클라이언트 적용
     (x_train, y_train), (x_test, y_test) = load_partition()
-    await asyncio.sleep(30) # data download wait
 
-    model = build_model()
+    model = build_model(x_train, y_train)
+
 
     try:
         loop = asyncio.get_event_loop()
@@ -316,28 +317,34 @@ async def notify_fail():
 
 def load_partition():
     # Load the dataset partitions
-    global client_num
-
-    # Cifar 10 데이터셋 불러오기
-    (X_train, y_train), (X_test, y_test) = tf.keras.datasets.cifar10.load_data()
+    global next_gl_model, client_num
 
     # client_num 값으로 데이터셋 나누기
-    (X_train, y_train) = X_train[client_num*100:(client_num+1)*500], y_train[client_num*100:(client_num+1)*500]
-    (X_test, y_test) = 	X_test[client_num*100:(client_num+1)*500], y_test[client_num*100:(client_num+1)*500]
+    # 환자 개인 데이터 추출
+    data, p_list = dataset.data_load()
+    p_df = data[data.subject_id==p_list[client_num]]
 
-    # class 설정
-    num_classes = 10
+    # label 까지 포함 dataframe
+    train_df, test_df = train_test_split(p_df.iloc[:,1:], test_size=0.1)
 
-    # one-hot encoding class 범위 지정
+    # one-hot encoding 범위 지정 => 4개 label
     # Client마다 보유 Label이 다르므로 => 전체 label 수를 맞춰야 함
-    train_labels = to_categorical(y_train, num_classes)
-    test_labels = to_categorical(y_test, num_classes)
+    train_labels = to_categorical(np.array(train_df.pop('label')),4)
+    test_labels = to_categorical(np.array(test_df.pop('label')),4)
 
-    # 전처리
-    train_features = X_train.astype('float32') / 255.0
-    test_features = X_test.astype('float32') / 255.0
+    train_features = np.array(train_df)
+    test_features = np.array(test_df)
 
-    return (train_features, train_labels), (test_features, test_labels)
+    # 정규화
+    # standard scaler
+    scaler = StandardScaler()
+    train_features = scaler.fit_transform(train_features)
+    test_features = scaler.transform(test_features)
+
+    train_features = np.clip(train_features, -5, 5)
+    test_features = np.clip(test_features, -5, 5)
+
+    return (train_df, train_labels), (test_df,test_labels)
 
 if __name__ == "__main__":
 
