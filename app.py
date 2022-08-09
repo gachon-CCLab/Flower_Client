@@ -224,11 +224,11 @@ async def flower_client_start():
     logging.info('FL learning')
     global model, status
 
-    model = build_model()
-
     # 환자별로 partition 분리 => 개별 클라이언트 적용
     (x_train, y_train), (x_test, y_test) = load_partition()
-    await asyncio.sleep(25) # dataload wait
+    await asyncio.sleep(30) # data download wait
+
+    model = build_model()
 
     try:
         loop = asyncio.get_event_loop()
