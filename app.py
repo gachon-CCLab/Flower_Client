@@ -333,18 +333,6 @@ async def notify_fin():
 
     status.FL_client_start = False
 
-<<<<<<< Updated upstream
-    # 최종 성능 결과
-    print('client_num, loss, accuracy, precision, recall, auc, auprc, f1_score, next_gl_model')
-    print('result -', str(client_num), loss, accuracy, precision, recall, auc, auprc, f1_score, next_gl_model)
-#     result = {"loss": loss, "accuracy": accuracy, "precision": precision, 
-#     "recall": recall, "auc": auc, "auprc": auprc, "f1_score": f1_score, "next_gl_model": next_gl_model}
-#     json_result = json.dumps(result)
-#     print(json_result)
-#     print('{"client_num": ' + str(client_num) + ', "type": "nested", "log": "' + str(json_result)+'"}')
-
-=======
->>>>>>> Stashed changes
     loop = asyncio.get_event_loop()
     future2 = loop.run_in_executor(None, requests.get, 'http://localhost:8003/trainFin')
     r = await future2
