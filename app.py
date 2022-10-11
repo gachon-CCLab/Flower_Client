@@ -3,7 +3,6 @@
 import datetime
 import itertools
 import os, logging, json
-import argparse
 import re
 import time
 from collections import Counter

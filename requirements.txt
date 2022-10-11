@@ -1,4 +1,4 @@
-pandas
+#pandas
 flwr
 urllib3
 boto3
@@ -10,8 +10,8 @@ tensorflow
 botocore
 keras
 #wandb
-numpy
+#numpy
 sklearn
 pyarrow
-tensorflow_addons
+#tensorflow_addons
 kubernetes
