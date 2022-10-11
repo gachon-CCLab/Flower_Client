@@ -106,7 +106,7 @@ class CifarClient(fl.client.NumPyClient):
 
         # round 종료 시간
         round_end_time = time.time() - round_start_time  # 연합학습 종료 시간
-        round_client_operation_time = str(datetime.timedelta(seconds=round_end_time))
+        # round_client_operation_time = str(datetime.timedelta(seconds=round_end_time))
 
         # Return updated model parameters and results
         parameters_prime = self.model.get_weights()
@@ -128,7 +128,7 @@ class CifarClient(fl.client.NumPyClient):
         # print('{"client_num": ' + str(status.FL_client_num) + '{"round": ' + str(status.FL_round) + ', "log": "' + str(json_result) + '"}')
 
         # Training: model performance by round
-        train_time_result = {"client_num": status.FL_client_num, "round": status.FL_round, "next_gl_model": status.FL_next_gl_model, "execution_time": round_client_operation_time}
+        train_time_result = {"client_num": status.FL_client_num, "round": status.FL_round, "next_gl_model": status.FL_next_gl_model, "execution_time": round_end_time}
         json_time_result = json.dumps(train_time_result)
         logging.info(f'train_time - {json_time_result}')
 
@@ -289,9 +289,9 @@ async def flower_client_start():
         logging.info('fl learning finished')
 
         fl_end_time = time.time() - fl_start_time  # 연합학습 종료 시간
-        fl_client_operation_time = str(datetime.timedelta(seconds=fl_end_time))
+        # fl_client_operation_time = str(datetime.timedelta(seconds=fl_end_time))
 
-        client_all_time_result = {"client_num": status.FL_client_num, "operation_time": fl_client_operation_time}
+        client_all_time_result = {"client_num": status.FL_client_num, "operation_time": fl_end_time}
         json_all_time_result = json.dumps(client_all_time_result)
         logging.info(f'client_operation_time - {json_all_time_result}')
 
