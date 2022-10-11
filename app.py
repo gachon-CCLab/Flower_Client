@@ -403,10 +403,6 @@ def load_partition():
     # data_result = {"client_num": {status.FL_client_num}, "data_check": dict_counter}
     # json_data_result = json.dumps(data_result)
     
-    client_all_time_result = {"client_num": status.FL_client_num, "operation_time": fl_end_time}
-    json_all_time_result = json.dumps(client_all_time_result)
-    logging.info(f'client_operation_time - {json_all_time_result}')
-    
     data_check_str = str('{"client_num": %s, "label_0": %s, "label_1": %s, "label_2": %s, "label_3": %s, "label_4": %s, "label_5": %s "label_6": %s, "label_7": %s, "label_8": %s, "label_9": %s}'
     %(status.FL_client_num, counter[0], counter[1], counter[2], counter[3], counter[4],
     counter[5], counter[6], counter[7], counter[8], counter[9]))
