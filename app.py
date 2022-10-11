@@ -121,12 +121,16 @@ class CifarClient(fl.client.NumPyClient):
         }
 
         # Training: model performance by round
-        train_result = {"client_num": status.FL_client_num, "round": status.FL_round, "loss": status.FL_loss, "accuracy": status.FL_accuracy,
-                        "next_gl_model": status.FL_next_gl_model, "execution_time": round_client_operation_time}
+        train_result = {"client_num": status.FL_client_num, "round": status.FL_round, "fit_loss": status.FL_loss, "fit_accuracy": status.FL_accuracy,
+                        "next_gl_model": status.FL_next_gl_model}
         json_result = json.dumps(train_result)
-        # print train log
-        logging.info(f'train - {json_result}')
+        logging.info(f'train_performance - {json_result}')
         # print('{"client_num": ' + str(status.FL_client_num) + '{"round": ' + str(status.FL_round) + ', "log": "' + str(json_result) + '"}')
+
+        # Training: model performance by round
+        train_time_result = {"client_num": status.FL_client_num, "round": status.FL_round, "next_gl_model": status.FL_next_gl_model, "execution_time": round_client_operation_time}
+        json_time_result = json.dumps(train_time_result)
+        logging.info(f'train_time - {json_time_result}')
 
         # save local model
         self.model.save(f'/model/model_V{status.FL_next_gl_model}.h5')
@@ -147,7 +151,7 @@ class CifarClient(fl.client.NumPyClient):
         num_examples_test = len(self.x_test)
 
         # Test: model performance by round
-        test_result = {"client_num": status.FL_client_num, "round": status.FL_round, "loss": test_loss, "accuracy": test_accuracy, "next_gl_model": status.FL_next_gl_model}
+        test_result = {"client_num": status.FL_client_num, "round": status.FL_round, "test_loss": test_loss, "test_accuracy": test_accuracy, "next_gl_model": status.FL_next_gl_model}
         json_result = json.dumps(test_result)
         logging.info(f'test - {json_result}')
 
@@ -161,7 +165,7 @@ class CifarClient(fl.client.NumPyClient):
         return test_loss, num_examples_test, {"accuracy": test_accuracy}
 
 # Client Local Model 생성
-def build_model(x_train, y_train):
+def build_model():
 
     # 모델 및 메트릭 정의
     METRICS = [
