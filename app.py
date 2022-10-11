@@ -111,13 +111,13 @@ class CifarClient(fl.client.NumPyClient):
         # Return updated model parameters and results
         parameters_prime = self.model.get_weights()
         num_examples_train = len(self.x_train)
-        status.FL_loss = history.history["loss"][0]
-        status.FL_accuracy = history.history["accuracy"][0]
+        status.FL_loss = history.history["loss"][len(history.history["loss"])-1]
+        status.FL_accuracy = history.history["accuracy"][len(history.history["accuracy"])-1]
         results = {
             "loss": status.FL_loss,
             "accuracy": status.FL_accuracy,
-            "val_loss": history.history["val_loss"][0],
-            "val_accuracy": history.history["val_accuracy"][0],
+            "val_loss": history.history["val_loss"][len(history.history["val_loss"])-1],
+            "val_accuracy": history.history["val_accuracy"][len(history.history["val_accuracy"])-1],
         }
 
         # Training: model performance by round
