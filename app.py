@@ -23,7 +23,7 @@ import uvicorn
 from pydantic.main import BaseModel
 
 # Log 포맷 설정
-logging.basicConfig(level=logging.DEBUG, format="%(asctime)s [%(levelname)8.8s] %(message)s",
+logging.basicConfig(level=logging.DEBUG, format="%(asctime)s [%(le  velname)8.8s] %(message)s",
                     handlers=[logging.StreamHandler()])
 logger = logging.getLogger(__name__) 
 
