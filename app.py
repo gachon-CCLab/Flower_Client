@@ -396,9 +396,9 @@ def load_partition():
     dict_counter = dict(counter)
 
     # data check log 생성
-    data_result = {"client_num": {status.FL_client_num}, "data_check": dict_counter}
-    json_data_result = json.dumps(data_result)
-    logging.info(f'data_check - {json_data_result}')
+    # data_result = {"client_num": {status.FL_client_num}, "data_check": dict_counter}
+    # json_data_result = json.dumps(data_result)
+    logging.info(f'data_check - "client_num": {status.FL_client_num}, "data_check": {dict_counter}')
 
     # print(f'client_num: {status.FL_client_num}, data_check: {dict_counter}')
 
