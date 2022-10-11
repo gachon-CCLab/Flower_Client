@@ -397,12 +397,14 @@ def load_partition():
     y_list = y_train.tolist()
     y_train_label = list(itertools.chain(*y_list))
     counter = Counter(y_train_label)
-    dict_counter = dict(counter)
+    # dict_counter = dict(counter)
 
     # data check log 생성
     # data_result = {"client_num": {status.FL_client_num}, "data_check": dict_counter}
     # json_data_result = json.dumps(data_result)
-    logging.info(f'data_check - "client_num": {status.FL_client_num}, "data_check": {dict_counter}')
+    logging.info(f'data_check - "client_num": {status.FL_client_num}, "label_0": {counter[0]}, "label_1": {counter[1]}, \
+    "label_2": {counter[2]}, "label_3": {counter[3]}, "label_4": {counter[4]}, "label_5": {counter[5]}, "label_6": {counter[6]}, \
+    "label_7": {counter[7]}, "label_8": {counter[8]}, "label_9": {counter[9]}')
 
     # print(f'client_num: {status.FL_client_num}, data_check: {dict_counter}')
 
