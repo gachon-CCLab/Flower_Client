@@ -411,7 +411,7 @@ def load_partition():
 #     counter[5], counter[6], counter[7], counter[8], counter[9]))
     data_check_str = re.sub(r'[^\uAC00-\uD7A30-9a-zA-Z{},_:"\-\s]', "", data_check_str)
     data_check_str = re.sub(r"\s+", " ", data_check_str)
-    data_check_str = data_check_str.replace('" ', '').replace(' "', '')
+    data_check_str = data_check_str.replace('" ', '')
     data_check_json = json.dumps(data_check_str)
     logging.info(f'data_check - {data_check_json}')
 
