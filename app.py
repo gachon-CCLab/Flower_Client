@@ -1,9 +1,14 @@
 # https://github.com/adap/flower/tree/main/examples/advanced_tensorflow 참조
 
+import datetime
+import itertools
 import os, logging, json
+import argparse
+import re
+import time
+from collections import Counter
 
 import tensorflow as tf
-import tensorflow_addons as tfa
 
 import flwr as fl
 from keras.models import Sequential
@@ -11,19 +16,12 @@ from keras.layers import Conv2D, MaxPool2D, Dropout, Flatten, Dense
 # keras에서 내장 함수 지원(to_categofical())
 from keras.utils.np_utils import to_categorical
 
-import wandb
-
 from functools import partial
 import requests
 from fastapi import FastAPI, BackgroundTasks
 import asyncio
 import uvicorn
 from pydantic.main import BaseModel
-
-import numpy as np
-import health_dataset as dataset
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler
 
 # Log 포맷 설정
 logging.basicConfig(level=logging.DEBUG, format="%(asctime)s [%(levelname)8.8s] %(message)s",
@@ -41,37 +39,31 @@ os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 pod_name = os.environ['MY_POD_ID'].split('-')
 client_num = int(pod_name[3]) # client 번호
 
-# 성능지표 초기화
-loss = 0
-accuracy = 0
-precision = 0
-recall = 0
-auc = 0
-f1_score = 0
-auprc=0
-
-next_gl_model= 0 # 글로벌 모델 버전
 
 # W&B 제어
-wb_controller = 0
+# wb_controller = 0
 
 # FL client 상태 확인
 app = FastAPI()
 
 # FL Client 상태 class
 class FLclient_status(BaseModel):
-    FL_client: int = client_num
+    FL_client_num: int = client_num # FL client 번호(ID)
     FL_client_online: bool = True
     FL_client_start: bool = False
     FL_client_fail: bool = False
-    FL_server_IP: str = None 
+    FL_server_IP: str = None # FL server IP
+    FL_round: int = 1 # 현재 수행 round
+    FL_loss: int = 0 # 성능 loss
+    FL_accuracy: int = 0 # 성능 acc
+    FL_next_gl_model: int = 0 # 글로벌 모델 버전
+
 
 status = FLclient_status()
 
 # Define Flower client
-class PatientClient(fl.client.NumPyClient):
-    global client_num
-    
+class CifarClient(fl.client.NumPyClient):
+
     def __init__(self, model, x_train, y_train, x_test, y_test):
         self.model = model
         self.x_train, self.y_train = x_train, y_train
@@ -82,12 +74,16 @@ class PatientClient(fl.client.NumPyClient):
         raise Exception("Not implemented (server-side parameter initialization)")
 
     def get_properties(self, config):
-        status = fl.common.Status(code=fl.common.Code.OK, message="Success")
-        properties = {"mse": 0.5} # super().get_properties({"mse": 0.5})
-        return fl.common.PropertiesRes(status, properties)
-    
+        # fl_status = fl.common.Status(code=fl.common.Code.OK, message="Success")
+        # properties = {"mse": 0.5} # super().get_properties({"mse": 0.5})
+        # return fl.common.PropertiesRes(fl_status, properties)
+        """Get properties of client."""
+        raise Exception("Not implemented")
+
     def fit(self, parameters, config):
         """Train parameters on the locally held training set."""
+
+        global status
 
         # Update local model parameters
         self.model.set_weights(parameters)
@@ -95,10 +91,10 @@ class PatientClient(fl.client.NumPyClient):
         # Get hyperparameters for this round
         batch_size: int = config["batch_size"]
         epochs: int = config["local_epochs"]
-        num_rounds: int = config["num_rounds"]
+        # num_rounds: int = config["num_rounds"]
 
-        # wandb에 파라미터값 upload
-        wandb.config.update({"num_rounds": num_rounds, "epochs": epochs,"batch_size": batch_size, "client_num": client_num})
+        # round 시작 시간
+        round_start_time = time.time()
 
         # Train the model using hyperparameters from config
         history = self.model.fit(
@@ -109,38 +105,37 @@ class PatientClient(fl.client.NumPyClient):
             validation_split=0.2,
         )
 
+        # round 종료 시간
+        round_end_time = time.time() - round_start_time  # 연합학습 종료 시간
+        round_client_operation_time = str(datetime.timedelta(seconds=round_end_time))
+
         # Return updated model parameters and results
         parameters_prime = self.model.get_weights()
         num_examples_train = len(self.x_train)
+        status.FL_loss = history.history["loss"][0]
+        status.FL_accuracy = history.history["accuracy"][0]
         results = {
-            "loss": history.history["loss"][0],
-            "accuracy": history.history["accuracy"][0],
+            "loss": status.FL_loss,
+            "accuracy": status.FL_accuracy,
             "val_loss": history.history["val_loss"][0],
             "val_accuracy": history.history["val_accuracy"][0],
         }
 
-        # 매 round 마다 성능지표 확인을 위한 log
-        loss = history.history["loss"][0]
-        accuracy = history.history["accuracy"][0]
-        precision = history.history["precision"][0]
-        recall = history.history["recall"][0]
-        auc = history.history["auc"][0]
-        auprc = history.history["auprc"][0]
-        f1_score = history.history["f1_score"][0]
+        # Training: model performance by round
+        train_result = {"client_num": status.FL_client_num, "round": status.FL_round, "loss": status.FL_loss, "accuracy": status.FL_accuracy,
+                        "next_gl_model": status.FL_next_gl_model, "execution_time": round_client_operation_time}
+        json_result = json.dumps(train_result)
+        # print train log
+        print(f'train - {json_result}')
+        # print('{"client_num": ' + str(status.FL_client_num) + '{"round": ' + str(status.FL_round) + ', "log": "' + str(json_result) + '"}')
 
-        # print(history.history)
-
-        # local model의 validation set  성능지표 wandb에 upload
-        wandb.log({"loss": loss, "accuracy": accuracy, "precision": precision, "recall": recall, "auc":auc, "auprc":auprc,"f1_score": f1_score})        
-
-        # local model의 validation set 성능지표 wandb에 upload
-        # wandb.log({"val_loss": val_loss, "val_accuracy": val_accuracy, "val_precision": val_precision, "val_recall": val_recall, "val_auc":val_auc, "val_auprc":val_auprc, "val_f1_score": val_f1_score})
+        # save local model
+        self.model.save(f'/model/model_V{status.FL_next_gl_model}.h5')
 
         return parameters_prime, num_examples_train, results
 
     def evaluate(self, parameters, config):
         """Evaluate parameters on the locally held test set."""
-        global status, loss, accuracy, precision, recall, auc, auprc, f1_score
 
         # Update local model with global parameters
         self.model.set_weights(parameters)
@@ -149,39 +144,71 @@ class PatientClient(fl.client.NumPyClient):
         steps: int = config["val_steps"]
 
         # Evaluate global model parameters on the local test data and return results
-        loss, accuracy, precision, recall, auc, auprc, f1_score = self.model.evaluate(self.x_test, self.y_test, 32, steps=steps)
+        test_loss, test_accuracy = self.model.evaluate(self.x_test, self.y_test, 32, steps=steps)
         num_examples_test = len(self.x_test)
 
-        return loss, num_examples_test, {"accuracy": accuracy, "precision": precision, "recall": recall, "auc": auc, "auprc": auprc, "f1_score":f1_score}
-        # return loss, num_examples_test, {"accuracy": accuracy, "precision": precision, "recall": recall, "auc": auc, 'f1_score': f1_score, 'auprc': auprc}
+        # Test: model performance by round
+        test_result = {"client_num": status.FL_client_num, "round": status.FL_round, "loss": test_loss, "accuracy": test_accuracy, "next_gl_model": status.FL_next_gl_model}
+        json_result = json.dumps(test_result)
+        print(f'test - {json_result}')
+
+        # 다음 라운드 수 증가
+        status.FL_round += 1
+
+        # print(f'test - client_num: {status.FL_client_num}, round: {status.FL_round}, performance: {json_result}')
+        # print('{"client_num": ' + str(status.FL_client_num) + '{"round": ' + str(status.FL_round) + ', "log": "' + str(json_result) + '"}')
+        # print('test_loss: ', test_loss, 'test_accuracy: ', test_accuracy)
+
+        return test_loss, num_examples_test, {"accuracy": test_accuracy}
 
 # Client Local Model 생성
 def build_model(x_train, y_train):
 
-     # 모델 및 메트릭 정의
+    # 모델 및 메트릭 정의
     METRICS = [
         tf.keras.metrics.BinaryAccuracy(name='accuracy'),
-        tf.keras.metrics.Precision(name='precision'),
-        tf.keras.metrics.Recall(name='recall'),
-        tf.keras.metrics.AUC(name='auc'),
-        tf.keras.metrics.AUC(name='auprc', curve='PR'), # precision-recall curve
-        tfa.metrics.F1Score(name='f1_score', num_classes=len(y_train[0]), average='micro'),
     ]
 
     # model 생성
-    model = tf.keras.Sequential([
-        tf.keras.layers.Dense(
-            16, activation='relu',
-            input_shape=(x_train.shape[-1],)),
-        tf.keras.layers.Dropout(0.5),
-        tf.keras.layers.Dense(len(y_train[0]), activation='sigmoid'),
-    ])
+    model = Sequential()
 
-    model.compile(
-        optimizer=tf.keras.optimizers.Adam(learning_rate=1e-3),
-        loss=tf.keras.losses.BinaryCrossentropy(),
-        metrics=METRICS)
+    # Convolutional Block (Conv-Conv-Pool-Dropout)
+    model.add(Conv2D(32, (3, 3), activation='relu', padding='same', input_shape=(32, 32, 3)))
+    model.add(Conv2D(32, (3, 3), activation='relu', padding='same'))
+    model.add(MaxPool2D(pool_size=(2, 2)))
+    model.add(Dropout(0.25))
+
+    # Classifying
+    model.add(Flatten())
+    model.add(Dense(512, activation='relu'))
+    model.add(Dropout(0.5))
+    model.add(Dense(10, activation='softmax'))
+
+    model.compile(loss='categorical_crossentropy', optimizer=tf.keras.optimizers.Adam(learning_rate=0.001),
+                  metrics=METRICS)
+
     return model
+
+
+# latest local model download
+def download_local_model(listdir):
+    # mac에서만 시행 (.DS_Store 파일 삭제)
+    if '.DS_Store' in listdir:
+        i = listdir.index(('.DS_Store'))
+        del listdir[i]
+
+    s = listdir[0]  # 비교 대상(gl_model 지정) => sort를 위함
+    p = re.compile(r'\d+')  # 숫자 패턴 추출
+    local_list_sorted = sorted(listdir, key=lambda s: int(p.search(s).group()))  # gl model 버전에 따라 정렬
+
+    local_model_name = local_list_sorted[len(local_list_sorted) - 1]  # 최근 gl model 추출
+    model = tf.keras.models.load_model(f'/model/{local_model_name}')
+    
+    # local_model_v = int(local_model_name.split('_')[1])
+    print('local_model_name: ', local_model_name)
+
+    return model
+
 
 @app.on_event("startup")
 def startup():
@@ -193,23 +220,23 @@ def get_info():
 
 @app.get("/start/{Server_IP}")
 async def flclientstart(background_tasks: BackgroundTasks, Server_IP: str):
-    global status, model, next_gl_model, wb_controller
+    global status
     
     # client_manager 주소
     client_res = requests.get('http://localhost:8003/info/')
 
     # 최신 global model 버전
     latest_gl_model_v = client_res.json()['GL_Model_V']
-    
+
     # 다음 global model 버전
-    next_gl_model = latest_gl_model_v + 1
+    status.FL_next_gl_model = latest_gl_model_v + 1
 
-    if wb_controller == 0:
-        # wandb login and init
-        wandb.login(key='6266dbc809b57000d78fb8b163179a0a3d6eeb37')
-        wandb.init(entity='ccl-fl', project='fl-client-news', name= 'client %s_V%s'%(client_num,next_gl_model), dir='/')
+    # if wb_controller == 0:
+    #     # wandb login and init
+    #     wandb.login(key='6266dbc809b57000d78fb8b163179a0a3d6eeb37')
+    #     wandb.init(entity='ccl-fl', project='fl-client-news', name= 'client %s_V%s'%(client_num,next_gl_model), dir='/')
 
-        wb_controller = 1
+    #     wb_controller = 1
 
     logging.info('bulid model')
 
@@ -222,62 +249,91 @@ async def flclientstart(background_tasks: BackgroundTasks, Server_IP: str):
 
 
 async def flower_client_start():
-    logging.info('FL learning')
-    global model, status, x_train, y_train
+    logging.info('FL learning ready')
+    global status
 
     # 환자별로 partition 분리 => 개별 클라이언트 적용
     (x_train, y_train), (x_test, y_test) = load_partition()
+    # await asyncio.sleep(30) # data download wait
+    logging.info('data loaded')
 
-    model = build_model(x_train, y_train)
+    # local_model 유무 확인
+    local_list = os.listdir(f'/model')
+    if not local_list:
+        print('init local model')
+        model = build_model()
 
+    else:
+        # 최신 local model 다운
+        print('Latest Local Model download')
+        model = download_local_model(local_list)
 
     try:
         loop = asyncio.get_event_loop()
-        client = PatientClient(model, x_train, y_train, x_test, y_test)
+        client = CifarClient(model, x_train, y_train, x_test, y_test)
         # logging.info(f'fl-server-ip: {status.FL_server_IP}')
         # await asyncio.sleep(23)
-        print('server IP: ', status.FL_server_IP)
+        # print('server IP: ', status.FL_server_IP)
         request = partial(fl.client.start_numpy_client, server_address=status.FL_server_IP, client=client)
-        await loop.run_in_executor(None, request)
+
+        # 라운드 수 초기화
+        status.FL_round = 1
+
+        fl_start_time = time.time()  # 연합학습 초기 시작 시간
+
+        await loop.run_in_executor(None, request)  # 연합학습 Client 비동기로 수행
 
         logging.info('fl learning finished')
-        await model_save()
-        logging.info('model_save')
+
+        fl_end_time = time.time() - fl_start_time  # 연합학습 종료 시간
+        fl_client_operation_time = str(datetime.timedelta(seconds=fl_end_time))
+
+        client_all_time_result = {"client_num": status.FL_client_num, "operation_time": fl_client_operation_time}
+        json_all_time_result = json.dumps(client_all_time_result)
+        print(f'client_operation_time - {json_all_time_result}')
+
+        # logging.info(f'fl_client_operation_time: {fl_client_operation_time}')
+
+        # client 객체 및 fl_client_start request 삭제
         del client, request
+
+        # Client learning 완료
+        await notify_fin()
+        logging.info('FL Client Learning Finish')
 
     except Exception as e:
         logging.info('[E][PC0002] learning', e)
         status.FL_client_fail = True
-        await notify_fail()        
-        status.FL_client_fail = False
-        raise e
-    return status
-
-async def model_save():
-    
-    global model, next_gl_model
-    try:
-        model.save('/model/model_V%s.h5'%next_gl_model)
-        await notify_fin()
-        model=None
-    except Exception as e:
-        logging.info('[E][PC0003] learning', e)
-        status.FL_client_fail = True
         await notify_fail()
         status.FL_client_fail = False
+        raise e
 
-    return status
+# async def model_save():
+    
+#     global model, next_gl_model
+#     try:
+#         model.save('/model/model_V%s.h5'%next_gl_model)
+#         await notify_fin()
+#         model=None
+#     except Exception as e:
+#         logging.info('[E][PC0003] learning', e)
+#         status.FL_client_fail = True
+#         await notify_fail()
+#         status.FL_client_fail = False
+
+#     return status
 
 # client manager에서 train finish 정보 확인
 async def notify_fin():
-    global status, loss, accuracy, precision, recall, auc, auprc, f1_score, next_gl_model, wb_controller
+    global status
     
     # wandb 종료
-    wandb.finish()
-    wb_controller = 0
+    # wandb.finish()
+    # wb_controller = 0
 
     status.FL_client_start = False
 
+<<<<<<< Updated upstream
     # 최종 성능 결과
     print('client_num, loss, accuracy, precision, recall, auc, auprc, f1_score, next_gl_model')
     print('result -', str(client_num), loss, accuracy, precision, recall, auc, auprc, f1_score, next_gl_model)
@@ -287,6 +343,8 @@ async def notify_fin():
 #     print(json_result)
 #     print('{"client_num": ' + str(client_num) + ', "type": "nested", "log": "' + str(json_result)+'"}')
 
+=======
+>>>>>>> Stashed changes
     loop = asyncio.get_event_loop()
     future2 = loop.run_in_executor(None, requests.get, 'http://localhost:8003/trainFin')
     r = await future2
@@ -317,36 +375,48 @@ async def notify_fail():
     
     return status
 
+
 def load_partition():
     # Load the dataset partitions
-    global next_gl_model, client_num
+    global status
+
+    # Cifar 10 데이터셋 불러오기
+    (X_train, y_train), (X_test, y_test) = tf.keras.datasets.cifar10.load_data()
 
     # client_num 값으로 데이터셋 나누기
-    # 환자 개인 데이터 추출
-    data, p_list = dataset.data_load()
-    p_df = data[data.subject_id==p_list[client_num]]
+    (X_train, y_train) = X_train[status.FL_client_num * 100:(status.FL_client_num + 1) * 500], y_train[
+                                                                           status.FL_client_num * 100:(status.FL_client_num + 1) * 500]
+    (X_test, y_test) = X_test[status.FL_client_num * 100:(status.FL_client_num + 1) * 500], y_test[status.FL_client_num * 100:(status.FL_client_num + 1) * 500]
 
-    # label 까지 포함 dataframe
-    train_df, test_df = train_test_split(p_df.iloc[:,1:], test_size=0.1)
+    # class 설정
+    num_classes = 10
 
-    # one-hot encoding 범위 지정 => 4개 label
+    # one-hot encoding class 범위 지정
     # Client마다 보유 Label이 다르므로 => 전체 label 수를 맞춰야 함
-    train_labels = to_categorical(np.array(train_df.pop('label')),4)
-    test_labels = to_categorical(np.array(test_df.pop('label')),4)
+    train_labels = to_categorical(y_train, num_classes)
+    test_labels = to_categorical(y_test, num_classes)
 
-    train_features = np.array(train_df)
-    test_features = np.array(test_df)
+    # 전처리
+    train_features = X_train.astype('float32') / 255.0
+    test_features = X_test.astype('float32') / 255.0
 
-    # 정규화
-    # standard scaler
-    scaler = StandardScaler()
-    train_features = scaler.fit_transform(train_features)
-    test_features = scaler.transform(test_features)
 
-    train_features = np.clip(train_features, -5, 5)
-    test_features = np.clip(test_features, -5, 5)
+    # data check => IID VS Non IID
+    # array -> list
+    y_list = y_train.tolist()
+    y_train_label = list(itertools.chain(*y_list))
+    counter = Counter(y_train_label)
+    dict_counter = dict(counter)
 
-    return (train_df, train_labels), (test_df,test_labels)
+    # data check log 생성
+    data_result = {"client_num": {status.FL_client_num}, "data_check": dict_counter}
+    json_data_result = json.dumps(data_result)
+    print(f'data_check - {json_data_result}')
+
+    # print(f'client_num: {status.FL_client_num}, data_check: {dict_counter}')
+
+    return (train_features, train_labels), (test_features, test_labels)
+
 
 if __name__ == "__main__":
 
