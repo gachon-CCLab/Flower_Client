@@ -147,7 +147,7 @@ class CifarClient(fl.client.NumPyClient):
         steps: int = config["val_steps"]
 
         # Evaluate global model parameters on the local test data and return results
-        test_loss, test_accuracy = self.model.evaluate(self.x_test, self.y_test, 32, steps=steps)
+        test_loss, test_accuracy = self.model.evaluate(x=self.x_test, y=self.y_test, batch_size=1024, steps=steps)
         num_examples_test = len(self.x_test)
 
         # Test: model performance by round
@@ -208,7 +208,7 @@ def download_local_model(listdir):
     model = tf.keras.models.load_model(f'/model/{local_model_name}')
     
     # local_model_v = int(local_model_name.split('_')[1])
-    logging.info('local_model_name: ', local_model_name)
+    logging.info(f'local_model_name: {local_model_name}')
 
     return model
 
