@@ -126,7 +126,7 @@ class CifarClient(fl.client.NumPyClient):
                         "next_gl_model": status.FL_next_gl_model, "execution_time": round_client_operation_time}
         json_result = json.dumps(train_result)
         # print train log
-        print(f'train - {json_result}')
+        logging.info(f'train - {json_result}')
         # print('{"client_num": ' + str(status.FL_client_num) + '{"round": ' + str(status.FL_round) + ', "log": "' + str(json_result) + '"}')
 
         # save local model
@@ -150,7 +150,7 @@ class CifarClient(fl.client.NumPyClient):
         # Test: model performance by round
         test_result = {"client_num": status.FL_client_num, "round": status.FL_round, "loss": test_loss, "accuracy": test_accuracy, "next_gl_model": status.FL_next_gl_model}
         json_result = json.dumps(test_result)
-        print(f'test - {json_result}')
+        logging.info(f'test - {json_result}')
 
         # 다음 라운드 수 증가
         status.FL_round += 1
@@ -205,7 +205,7 @@ def download_local_model(listdir):
     model = tf.keras.models.load_model(f'/model/{local_model_name}')
     
     # local_model_v = int(local_model_name.split('_')[1])
-    print('local_model_name: ', local_model_name)
+    logging.info('local_model_name: ', local_model_name)
 
     return model
 
@@ -260,12 +260,12 @@ async def flower_client_start():
     # local_model 유무 확인
     local_list = os.listdir(f'/model')
     if not local_list:
-        print('init local model')
+        logging.info('init local model')
         model = build_model()
 
     else:
         # 최신 local model 다운
-        print('Latest Local Model download')
+        logging.info('Latest Local Model download')
         model = download_local_model(local_list)
 
     try:
@@ -290,7 +290,7 @@ async def flower_client_start():
 
         client_all_time_result = {"client_num": status.FL_client_num, "operation_time": fl_client_operation_time}
         json_all_time_result = json.dumps(client_all_time_result)
-        print(f'client_operation_time - {json_all_time_result}')
+        logging.info(f'client_operation_time - {json_all_time_result}')
 
         # logging.info(f'fl_client_operation_time: {fl_client_operation_time}')
 
@@ -336,11 +336,11 @@ async def notify_fin():
     loop = asyncio.get_event_loop()
     future2 = loop.run_in_executor(None, requests.get, 'http://localhost:8003/trainFin')
     r = await future2
-    print('try notify_fin')
+    logging.info('try notify_fin')
     if r.status_code == 200:
-        print('trainFin')
+        logging.info('trainFin')
     else:
-        print('notify_fin error: ', r.content)
+        logging.error('notify_fin error: ', r.content)
     return status
 
 # client manager에서 train fail 정보 확인
@@ -357,9 +357,9 @@ async def notify_fail():
     future1 = loop.run_in_executor(None, requests.get, 'http://localhost:8003/trainFail')
     r = await future1
     if r.status_code == 200:
-        logging.info('trainFin')
+        logging.error('trainFin')
     else:
-        logging.info('notify_fail error: ', r.content)
+        logging.error('notify_fail error: ', r.content)
     
     return status
 
@@ -399,7 +399,7 @@ def load_partition():
     # data check log 생성
     data_result = {"client_num": {status.FL_client_num}, "data_check": dict_counter}
     json_data_result = json.dumps(data_result)
-    print(f'data_check - {json_data_result}')
+    logging.info(f'data_check - {json_data_result}')
 
     # print(f'client_num: {status.FL_client_num}, data_check: {dict_counter}')
 
