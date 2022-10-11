@@ -409,7 +409,7 @@ def load_partition():
 #     data_check_str = str({"client_num": %s, "label_0": %s, "label_1": %s, "label_2": %s, "label_3": %s, "label_4": %s, "label_5": %s, "label_6": %s, "label_7": %s, "label_8": %s, "label_9": %s}
 #     %(status.FL_client_num, counter[0], counter[1], counter[2], counter[3], counter[4],
 #     counter[5], counter[6], counter[7], counter[8], counter[9]))
-    data_check_str = re.sub(r"[^\uAC00-\uD7A30-9a-zA-Z{}\s]", "", data_check_str)
+    data_check_str = re.sub(r"[^\uAC00-\uD7A30-9a-zA-Z{},_-:\s]", "", data_check_str)
     data_check_json = json.dumps(data_check_str)
     logging.info(f'data_check - {data_check_json}')
 
