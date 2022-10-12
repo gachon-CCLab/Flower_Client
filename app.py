@@ -402,18 +402,15 @@ def load_partition():
     # data check log 생성
     # data_result = {"client_num": {status.FL_client_num}, "data_check": dict_counter}
     # json_data_result = json.dumps(data_result)
-      
+   
     #     data_check_str = str({"client_num": %s, "label_0": %s, "label_1": %s, "label_2": %s, "label_3": %s, "label_4": %s, "label_5": %s, "label_6": %s, "label_7": %s, "label_8": %s, "label_9": %s}
     #     %(status.FL_client_num, counter[0], counter[1], counter[2], counter[3], counter[4],
     #     counter[5], counter[6], counter[7], counter[8], counter[9]))
 
-    data_check_dict = {
-        "client_num": int(status.FL_client_num)
-    }
     for i in range(10):
-        data_check_dict["label_" + str(i)] = int(counter[i])
-    data_check_json = json.dumps(data_check_dict)
-    logging.info(f'data_check - {data_check_json}')
+        data_check_dict = {"client_num": int(status.FL_client_num), "label_num": i, "data_size": int(counter[i])}
+        data_check_json = json.dumps(data_check_dict)
+        logging.info(f'data_check - {data_check_json}')
 
     # print(f'client_num: {status.FL_client_num}, data_check: {dict_counter}')
 
