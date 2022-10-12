@@ -417,7 +417,7 @@ def load_partition():
 
 
     data_check_json = {
-        status.FL_client_num
+        "client_num": int(status.FL_client_num)
     }
     for i in range(10):
         data_check_json["label_" + str(i)] = int(counter[i])
