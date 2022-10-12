@@ -416,12 +416,12 @@ def load_partition():
 #     data_check_str = data_check_str.replace('" ', '')
 
 
-    data_check_json = {
+    data_check_dict = {
         "client_num": int(status.FL_client_num)
     }
     for i in range(10):
-        data_check_json["label_" + str(i)] = int(counter[i])
-    data_check_json = json.dumps(data_check_str)
+        data_check_dict["label_" + str(i)] = int(counter[i])
+    data_check_json = json.dumps(data_check_dict)
     logging.info(f'data_check - {data_check_json}')
 
     # print(f'client_num: {status.FL_client_num}, data_check: {dict_counter}')
