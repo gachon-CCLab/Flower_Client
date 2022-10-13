@@ -377,7 +377,7 @@ def load_partition():
     # client_num 값으로 데이터셋 나누기
     (X_train, y_train) = X_train[status.FL_client_num * 2000:(status.FL_client_num + 1) * 2000], y_train[
                                                                            status.FL_client_num * 2000:(status.FL_client_num + 1) * 2000]
-    (X_test, y_test) = X_test[status.FL_client_num * 2000:(status.FL_client_num + 1) * 2000], y_test[status.FL_client_num * 2000:(status.FL_client_num + 1) * 2000]
+    (X_test, y_test) = X_test[status.FL_client_num * 1000:(status.FL_client_num + 1) * 1000], y_test[status.FL_client_num * 1000:(status.FL_client_num + 1) * 1000]
 
     # class 설정
     num_classes = 10
