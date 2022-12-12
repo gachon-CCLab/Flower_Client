@@ -261,16 +261,19 @@ async def flower_client_start():
     # await asyncio.sleep(30) # data download wait
     logging.info('data loaded')
 
-    # local_model 유무 확인
-    local_list = os.listdir(f'/model')
-    if not local_list:
-        logging.info('init local model')
-        model = build_model()
+    # model 생성
+    model = build_model()
 
-    else:
-        # 최신 local model 다운
-        logging.info('Latest Local Model download')
-        model = download_local_model(local_list)
+    # # local_model 유무 확인
+    # local_list = os.listdir(f'/model')
+    # if not local_list:
+    #     logging.info('init local model')
+    #     model = build_model()
+
+    # else:
+    #     # 최신 local model 다운
+    #     logging.info('Latest Local Model download')
+    #     model = download_local_model(local_list)
 
     try:
         loop = asyncio.get_event_loop()
