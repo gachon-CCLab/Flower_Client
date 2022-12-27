@@ -376,8 +376,8 @@ def load_partition():
     global status
 
     # set data size
-    train_size = 5000
-    test_size = 3000
+    train_size = 6000
+    test_size = 2000
 
     # Cifar 10 데이터셋 불러오기
     (X_train, y_train), (X_test, y_test) = tf.keras.datasets.cifar10.load_data()
