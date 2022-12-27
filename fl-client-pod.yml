@@ -23,11 +23,11 @@ spec:
             image: docker.io/hoo0681/airflowkubepodimage:0.1
             resources:
               requests:
-                memory: "3Gi"
+                memory: "2Gi"
                 cpu: "2000m"
-              limits:
-                memory: "4Gi"
-                cpu: "2500m"
+              # limits:
+              #   memory: "4Gi"
+              #   cpu: "2500m"
             ports:
               - containerPort: 8002
             env:

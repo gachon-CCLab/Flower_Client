@@ -396,8 +396,8 @@ def load_partition():
     test_labels = to_categorical(y_test, num_classes)
 
     # 전처리
-    train_features = X_train.astype('float32') / 255.0
-    test_features = X_test.astype('float32') / 255.0
+    # train_features = X_train.astype('float32') / 255.0
+    # test_features = X_test.astype('float32') / 255.0
 
 
     # data check => IID VS Non IID
@@ -422,7 +422,9 @@ def load_partition():
 
     # print(f'client_num: {status.FL_client_num}, data_check: {dict_counter}')
 
-    return (train_features, train_labels), (test_features, test_labels)
+    # return (train_features, train_labels), (test_features, test_labels)
+    return (X_train, train_labels), (X_test, test_labels)
+
 
 
 if __name__ == "__main__":
