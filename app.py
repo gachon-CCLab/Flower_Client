@@ -148,7 +148,7 @@ class CifarClient(fl.client.NumPyClient):
         steps: int = config["val_steps"]
 
         # Evaluate global model parameters on the local test data and return results
-        test_loss, test_accuracy = self.model.evaluate(x=self.x_test, y=self.y_test, batch_size=1024, steps=steps)
+        test_loss, test_accuracy = self.model.evaluate(x=self.x_test, y=self.y_test, batch_size=32, steps=steps)
         num_examples_test = len(self.x_test)
 
         # Test: model performance by round
