@@ -375,13 +375,17 @@ def load_partition():
     # Load the dataset partitions
     global status
 
+    # set data size
+    train_size = 5000
+    test_size = 3000
+
     # Cifar 10 데이터셋 불러오기
     (X_train, y_train), (X_test, y_test) = tf.keras.datasets.cifar10.load_data()
 
     # client_num 값으로 데이터셋 나누기
-    (X_train, y_train) = X_train[status.FL_client_num * 2000:(status.FL_client_num + 1) * 2000], y_train[
-                                                                           status.FL_client_num * 2000:(status.FL_client_num + 1) * 2000]
-    (X_test, y_test) = X_test[status.FL_client_num * 1000:(status.FL_client_num + 1) * 1000], y_test[status.FL_client_num * 1000:(status.FL_client_num + 1) * 1000]
+    (X_train, y_train) = X_train[status.FL_client_num * train_size:(status.FL_client_num + 1) * train_size], y_train[
+                                                                           status.FL_client_num * train_size:(status.FL_client_num + 1) * train_size]
+    (X_test, y_test) = X_test[status.FL_client_num * test_size:(status.FL_client_num + 1) * test_size], y_test[status.FL_client_num * test_size:(status.FL_client_num + 1) * test_size]
 
     # class 설정
     num_classes = 10
