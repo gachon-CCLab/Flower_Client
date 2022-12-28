@@ -25,6 +25,7 @@ spec:
               requests:
                 memory: "4Gi"
                 cpu: "3000m"
+                nvidia.com/gpu: "1"
               # limits:
               #   memory: "4Gi"
               #   cpu: "2500m"
