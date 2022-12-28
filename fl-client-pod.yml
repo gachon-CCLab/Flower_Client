@@ -23,8 +23,8 @@ spec:
             image: docker.io/hoo0681/airflowkubepodimage:0.1
             resources:
               requests:
-                memory: "4Gi"
-                cpu: "3000m"
+                memory: "2Gi"
+                cpu: "1000m"
                 nvidia.com/gpu: "1"
               # limits:
               #   memory: "4Gi"
