@@ -32,7 +32,11 @@ logger = logging.getLogger(__name__)
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
 # CPU만 사용
-os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+# os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+
+# GPU 사용
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+
 
 # client pod number 추출
 pod_name = os.environ['MY_POD_ID'].split('-')
@@ -40,8 +44,91 @@ client_num = int(pod_name[3]) # client 번호
 print('pod_name: ', pod_name)
 print('client_num: ', client_num)
 
-# W&B 제어
-# wb_controller = 0
+
+# pytorch로 변경 시 수정 필요
+# Client Local Model 생성
+def build_model():
+
+    # 모델 및 메트릭 정의
+    METRICS = [
+        tf.keras.metrics.BinaryAccuracy(name='accuracy'),
+    ]
+
+    # model 생성
+    model = Sequential()
+
+    # Convolutional Block (Conv-Conv-Pool-Dropout)
+    model.add(Conv2D(32, (3, 3), activation='relu', padding='same', input_shape=(32, 32, 3)))
+    model.add(Conv2D(32, (3, 3), activation='relu', padding='same'))
+    model.add(MaxPool2D(pool_size=(2, 2)))
+    model.add(Dropout(0.25))
+
+    # Classifying
+    model.add(Flatten())
+    model.add(Dense(512, activation='relu'))
+    model.add(Dropout(0.5))
+    model.add(Dense(10, activation='softmax'))
+
+    model.compile(loss='categorical_crossentropy', optimizer=tf.keras.optimizers.Adam(learning_rate=0.001),
+                  metrics=METRICS)
+
+    return model
+
+# pytorch로 변경 시 수정 필요 (Data format)
+# Load the dataset partitions
+def load_partition():
+    global status
+
+    # set data size
+    train_size = 6000
+    test_size = 2000
+
+    # Cifar 10 데이터셋 불러오기
+    (X_train, y_train), (X_test, y_test) = tf.keras.datasets.cifar10.load_data()
+
+    # client_num 값으로 데이터셋 나누기
+    (X_train, y_train) = X_train[status.FL_client_num * train_size:(status.FL_client_num + 1) * train_size], y_train[
+                                                                           status.FL_client_num * train_size:(status.FL_client_num + 1) * train_size]
+    (X_test, y_test) = X_test[status.FL_client_num * test_size:(status.FL_client_num + 1) * test_size], y_test[status.FL_client_num * test_size:(status.FL_client_num + 1) * test_size]
+
+    # class 설정
+    num_classes = 10
+
+    # one-hot encoding class 범위 지정
+    # Client마다 보유 Label이 다르므로 => 전체 label 수를 맞춰야 함
+    train_labels = to_categorical(y_train, num_classes)
+    test_labels = to_categorical(y_test, num_classes)
+
+    # 전처리
+    # train_features = X_train.astype('float32') / 255.0
+    # test_features = X_test.astype('float32') / 255.0
+
+
+    # data check => IID VS Non IID
+    # array -> list
+    y_list = y_train.tolist()
+    y_train_label = list(itertools.chain(*y_list))
+    counter = Counter(y_train_label)
+    # dict_counter = dict(counter)
+
+    # data check log 생성
+    # data_result = {"client_num": {status.FL_client_num}, "data_check": dict_counter}
+    # json_data_result = json.dumps(data_result)
+   
+    #     data_check_str = str({"client_num": %s, "label_0": %s, "label_1": %s, "label_2": %s, "label_3": %s, "label_4": %s, "label_5": %s, "label_6": %s, "label_7": %s, "label_8": %s, "label_9": %s}
+    #     %(status.FL_client_num, counter[0], counter[1], counter[2], counter[3], counter[4],
+    #     counter[5], counter[6], counter[7], counter[8], counter[9]))
+
+    for i in range(10):
+        data_check_dict = {"client_num": int(status.FL_client_num), "label_num": i, "data_size": int(counter[i])}
+        data_check_json = json.dumps(data_check_dict)
+        logging.info(f'data_check - {data_check_json}')
+
+    # print(f'client_num: {status.FL_client_num}, data_check: {dict_counter}')
+
+    # return (train_features, train_labels), (test_features, test_labels)
+    return (X_train, train_labels), (X_test, test_labels)
+
 
 # FL client 상태 확인
 app = FastAPI()
@@ -80,6 +167,7 @@ class CifarClient(fl.client.NumPyClient):
         """Get properties of client."""
         raise Exception("Not implemented")
 
+    # pytorch로 변경 시 수정 필요 (Data format 및 train)
     def fit(self, parameters, config):
         """Train parameters on the locally held training set."""
 
@@ -96,6 +184,7 @@ class CifarClient(fl.client.NumPyClient):
         # round 시작 시간
         round_start_time = time.time()
 
+        # local model train
         # Train the model using hyperparameters from config
         history = self.model.fit(
             self.x_train,
@@ -138,6 +227,7 @@ class CifarClient(fl.client.NumPyClient):
 
         return parameters_prime, num_examples_train, results
 
+    # pytorch로 변경 시 수정 필요 (Data format)
     def evaluate(self, parameters, config):
         """Evaluate parameters on the locally held test set."""
 
@@ -164,34 +254,6 @@ class CifarClient(fl.client.NumPyClient):
         # print('test_loss: ', test_loss, 'test_accuracy: ', test_accuracy)
 
         return test_loss, num_examples_test, {"accuracy": test_accuracy}
-
-# Client Local Model 생성
-def build_model():
-
-    # 모델 및 메트릭 정의
-    METRICS = [
-        tf.keras.metrics.BinaryAccuracy(name='accuracy'),
-    ]
-
-    # model 생성
-    model = Sequential()
-
-    # Convolutional Block (Conv-Conv-Pool-Dropout)
-    model.add(Conv2D(32, (3, 3), activation='relu', padding='same', input_shape=(32, 32, 3)))
-    model.add(Conv2D(32, (3, 3), activation='relu', padding='same'))
-    model.add(MaxPool2D(pool_size=(2, 2)))
-    model.add(Dropout(0.25))
-
-    # Classifying
-    model.add(Flatten())
-    model.add(Dense(512, activation='relu'))
-    model.add(Dropout(0.5))
-    model.add(Dense(10, activation='softmax'))
-
-    model.compile(loss='categorical_crossentropy', optimizer=tf.keras.optimizers.Adam(learning_rate=0.001),
-                  metrics=METRICS)
-
-    return model
 
 
 # latest local model download
@@ -369,62 +431,6 @@ async def notify_fail():
         logging.error('notify_fail error: ', r.content)
     
     return status
-
-
-def load_partition():
-    # Load the dataset partitions
-    global status
-
-    # set data size
-    train_size = 6000
-    test_size = 2000
-
-    # Cifar 10 데이터셋 불러오기
-    (X_train, y_train), (X_test, y_test) = tf.keras.datasets.cifar10.load_data()
-
-    # client_num 값으로 데이터셋 나누기
-    (X_train, y_train) = X_train[status.FL_client_num * train_size:(status.FL_client_num + 1) * train_size], y_train[
-                                                                           status.FL_client_num * train_size:(status.FL_client_num + 1) * train_size]
-    (X_test, y_test) = X_test[status.FL_client_num * test_size:(status.FL_client_num + 1) * test_size], y_test[status.FL_client_num * test_size:(status.FL_client_num + 1) * test_size]
-
-    # class 설정
-    num_classes = 10
-
-    # one-hot encoding class 범위 지정
-    # Client마다 보유 Label이 다르므로 => 전체 label 수를 맞춰야 함
-    train_labels = to_categorical(y_train, num_classes)
-    test_labels = to_categorical(y_test, num_classes)
-
-    # 전처리
-    # train_features = X_train.astype('float32') / 255.0
-    # test_features = X_test.astype('float32') / 255.0
-
-
-    # data check => IID VS Non IID
-    # array -> list
-    y_list = y_train.tolist()
-    y_train_label = list(itertools.chain(*y_list))
-    counter = Counter(y_train_label)
-    # dict_counter = dict(counter)
-
-    # data check log 생성
-    # data_result = {"client_num": {status.FL_client_num}, "data_check": dict_counter}
-    # json_data_result = json.dumps(data_result)
-   
-    #     data_check_str = str({"client_num": %s, "label_0": %s, "label_1": %s, "label_2": %s, "label_3": %s, "label_4": %s, "label_5": %s, "label_6": %s, "label_7": %s, "label_8": %s, "label_9": %s}
-    #     %(status.FL_client_num, counter[0], counter[1], counter[2], counter[3], counter[4],
-    #     counter[5], counter[6], counter[7], counter[8], counter[9]))
-
-    for i in range(10):
-        data_check_dict = {"client_num": int(status.FL_client_num), "label_num": i, "data_size": int(counter[i])}
-        data_check_json = json.dumps(data_check_dict)
-        logging.info(f'data_check - {data_check_json}')
-
-    # print(f'client_num: {status.FL_client_num}, data_check: {dict_counter}')
-
-    # return (train_features, train_labels), (test_features, test_labels)
-    return (X_train, train_labels), (X_test, test_labels)
-
 
 
 if __name__ == "__main__":
