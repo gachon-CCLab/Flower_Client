@@ -1,4 +1,5 @@
 # https://github.com/adap/flower/tree/main/examples/advanced_tensorflow 참조
+import itertools
 import os, logging, json
 import re
 import time
@@ -245,11 +246,13 @@ async def flower_client_start():
     balanced = False # data partition2: Each client is randomly distributed in different sizes
 
     # 환자별로 partition 분리 => 개별 클라이언트 적용
-    (x_train, y_train), (x_test, y_test), y_train_label = client_data.data_load(all_client_num, status.FL_client_num, dataset, skewed, balanced)
+    (x_train, y_train), (x_test, y_test) = client_data.data_load(all_client_num, status.FL_client_num, dataset, skewed, balanced)
     # await asyncio.sleep(30) # data download wait
     logging.info('data loaded')
 
     # data check => IID VS Non IID
+    y_list = y_train.tolist()
+    y_train_label = list(itertools.chain(*y_list))
     counter = Counter(y_train_label)
 
     for i in range(10):

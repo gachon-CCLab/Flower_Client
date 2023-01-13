@@ -41,7 +41,7 @@ def data_load(all_client_num, FL_client_num, dataset, skewed, balanced):
     # test_features = X_test.astype('float32') / 255.0
 
     # return (train_features, train_labels), (test_features, test_labels)
-    return (X_train, train_labels), (X_test, test_labels), y_train
+    return (X_train, train_labels), (X_test, test_labels)
 
 
 def data_partition(X_train, y_train, X_test, y_test, skewed, balanced, FL_client_num, all_client_num):
