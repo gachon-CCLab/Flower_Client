@@ -6,7 +6,7 @@ import time
 from collections import Counter
 
 import tensorflow as tf
-
+from keras.utils.np_utils import to_categorical
 import flwr as fl
 
 from functools import partial
@@ -77,7 +77,7 @@ class FLclient_status(BaseModel):
 status = FLclient_status()
 
 # Define Flower client
-class CifarClient(fl.client.NumPyClient):
+class FLClient(fl.client.NumPyClient):
 
     def __init__(self, model, x_train, y_train, x_test, y_test):
         self.model = model
@@ -247,6 +247,9 @@ async def flower_client_start():
 
     # 환자별로 partition 분리 => 개별 클라이언트 적용
     (x_train, y_train), (x_test, y_test) = client_data.data_load(all_client_num, status.FL_client_num, dataset, skewed, balanced)
+    
+    # class 설정
+    num_classes = 10
     # await asyncio.sleep(30) # data download wait
     logging.info('data loaded')
 
@@ -259,6 +262,11 @@ async def flower_client_start():
         data_check_dict = {"client_num": int(status.FL_client_num), "label_num": i, "data_size": int(counter[i])}
         data_check_json = json.dumps(data_check_dict)
         logging.info(f'data_check - {data_check_json}')
+
+    # one-hot encoding class 범위 지정
+    # Client마다 보유 Label이 다르므로 => 전체 label 수를 맞춰야 함
+    train_labels = to_categorical(y_train, num_classes)
+    test_labels = to_categorical(y_test, num_classes)
 
     # model 생성
     model = build_model(dataset)
@@ -276,7 +284,7 @@ async def flower_client_start():
 
     try:
         loop = asyncio.get_event_loop()
-        client = CifarClient(model, x_train, y_train, x_test, y_test)
+        client = FLClient(model, x_train, train_labels, x_test, test_labels)
         # logging.info(f'fl-server-ip: {status.FL_server_IP}')
         # await asyncio.sleep(23)
         # print('server IP: ', status.FL_server_IP)

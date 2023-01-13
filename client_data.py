@@ -6,8 +6,6 @@ import logging
 import tensorflow as tf
 import numpy as np
 
-from keras.utils.np_utils import to_categorical
-
 
 # Log 포맷 설정
 logging.basicConfig(level=logging.DEBUG, format="%(asctime)s [%(levelname)8.8s] %(message)s",
@@ -26,22 +24,16 @@ def data_load(all_client_num, FL_client_num, dataset, skewed, balanced):
     elif dataset == 'fashion_mnist':
         (X_train, y_train), (X_test, y_test) = tf.keras.datasets.fashion_mnist.load_data()
 
-    # class 설정
-    num_classes = 10
-
     (X_train, y_train), (X_test, y_test) = data_partition(X_train, y_train, X_test, y_test, skewed, balanced, FL_client_num, all_client_num)
         
-    # one-hot encoding class 범위 지정
-    # Client마다 보유 Label이 다르므로 => 전체 label 수를 맞춰야 함
-    train_labels = to_categorical(y_train, num_classes)
-    test_labels = to_categorical(y_test, num_classes)
+
 
     # 전처리
     # train_features = X_train.astype('float32') / 255.0
     # test_features = X_test.astype('float32') / 255.0
 
     # return (train_features, train_labels), (test_features, test_labels)
-    return (X_train, train_labels), (X_test, test_labels)
+    return (X_train, y_train), (X_test, y_test)
 
 
 def data_partition(X_train, y_train, X_test, y_test, skewed, balanced, FL_client_num, all_client_num):
@@ -71,7 +63,7 @@ def data_partition(X_train, y_train, X_test, y_test, skewed, balanced, FL_client
             test_size = np.random.randint(test_first_size, test_next_size)
 
             (X_train, y_train) = X_train[train_first_size:train_size], y_train[train_first_size:train_size]
-            (X_test, y_test) = X_test[train_first_size:train_size], y_test[train_first_size:train_size]
+            (X_test, y_test) = X_test[test_first_size:test_size], y_test[test_first_size:test_size]
     
     # balanced skewed/ imbalanced skewed
     else:
