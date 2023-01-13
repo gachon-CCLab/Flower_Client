@@ -75,14 +75,9 @@ def data_partition(X_train, y_train, X_test, y_test, skewed, skewed_spec, balanc
     return (X_train, y_train), (X_test, y_test)
     
 
-
-# Imbalanced/one class Skewed
-def skewed_partition(X_train, y_train, X_test, y_test, skewed, balanced, FL_client_num, all_client_num, dataset):
-
-    np.random.seed(FL_client_num)
-    
-    # Client 마다 다른 label 부여
-    if skewed == 'skewed_one':
+# Client 마다 다른 label 부여
+def skewed_label(skewed_spec, FL_client_num):
+    if skewed_spec == 'skewed_one':
         if FL_client_num == 0:
             labels = 0
         elif FL_client_num == 1:
@@ -93,7 +88,7 @@ def skewed_partition(X_train, y_train, X_test, y_test, skewed, balanced, FL_clie
             labels = 3
         elif FL_client_num == 4:
             labels = 4
-    elif skewed == 'skewed_two':
+    elif skewed_spec == 'skewed_two':
         if FL_client_num == 0:
             labels = [0,1]
         elif FL_client_num == 1:
@@ -104,7 +99,7 @@ def skewed_partition(X_train, y_train, X_test, y_test, skewed, balanced, FL_clie
             labels = [6,7]
         elif FL_client_num == 4:
             labels = [8,9]
-    elif skewed =='skewed_three':
+    elif skewed_spec =='skewed_three':
         if FL_client_num == 0:
             labels = [0,1,2]
         elif FL_client_num == 1:
@@ -115,6 +110,15 @@ def skewed_partition(X_train, y_train, X_test, y_test, skewed, balanced, FL_clie
             labels = [6,7,8]
         elif FL_client_num == 4:
             labels = [0,8,9]
+
+    return labels
+
+# Imbalanced/one class Skewed
+def skewed_partition(X_train, y_train, X_test, y_test, skewed_spec, balanced, FL_client_num, all_client_num, dataset):
+
+    np.random.seed(FL_client_num)
+    
+    labels = skewed_label(skewed_spec, FL_client_num)
         
     # select label index
     train_indexs = []
