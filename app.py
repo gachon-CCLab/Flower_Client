@@ -245,7 +245,7 @@ async def flower_client_start():
     balanced = False # data partition2: Each client is randomly distributed in different sizes
 
     # 환자별로 partition 분리 => 개별 클라이언트 적용
-    (x_train, y_train), (x_test, y_test), y_train_label = client_data.load_partition(all_client_num, status.FL_client_num, dataset, skewed, balanced)
+    (x_train, y_train), (x_test, y_test), y_train_label = client_data.data_load(all_client_num, status.FL_client_num, dataset, skewed, balanced)
     # await asyncio.sleep(30) # data download wait
     logging.info('data loaded')
 
