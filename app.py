@@ -1,7 +1,4 @@
 # https://github.com/adap/flower/tree/main/examples/advanced_tensorflow 참조
-
-import datetime
-import itertools
 import os, logging, json
 import re
 import time
@@ -10,10 +7,6 @@ from collections import Counter
 import tensorflow as tf
 
 import flwr as fl
-from keras.models import Sequential
-from keras.layers import Conv2D, MaxPool2D, Dropout, Flatten, Dense
-# keras에서 내장 함수 지원(to_categofical())
-from keras.utils.np_utils import to_categorical
 
 from functools import partial
 import requests
@@ -21,6 +14,8 @@ from fastapi import FastAPI, BackgroundTasks
 import asyncio
 import uvicorn
 from pydantic.main import BaseModel
+
+import client_data, client_model
 
 # Log 포맷 설정
 logging.basicConfig(level=logging.DEBUG, format="%(asctime)s [%(levelname)8.8s] %(message)s",
@@ -47,87 +42,19 @@ print('client_num: ', client_num)
 
 # pytorch로 변경 시 수정 필요
 # Client Local Model 생성
-def build_model():
+def build_model(dataset):
 
-    # 모델 및 메트릭 정의
-    METRICS = [
-        tf.keras.metrics.BinaryAccuracy(name='accuracy'),
-    ]
+    # 데이터셋 불러오기
+    if dataset == 'cifar10':
+        model = client_model.model_cnn()
 
-    # model 생성
-    model = Sequential()
-
-    # Convolutional Block (Conv-Conv-Pool-Dropout)
-    model.add(Conv2D(32, (3, 3), activation='relu', padding='same', input_shape=(32, 32, 3)))
-    model.add(Conv2D(32, (3, 3), activation='relu', padding='same'))
-    model.add(MaxPool2D(pool_size=(2, 2)))
-    model.add(Dropout(0.25))
-
-    # Classifying
-    model.add(Flatten())
-    model.add(Dense(512, activation='relu'))
-    model.add(Dropout(0.5))
-    model.add(Dense(10, activation='softmax'))
-
-    model.compile(loss='categorical_crossentropy', optimizer=tf.keras.optimizers.Adam(learning_rate=0.001),
-                  metrics=METRICS)
+    elif dataset == 'mnist':
+        model = client_model.model_mnist()
+    
+    elif dataset == 'fashion_mnist':
+        model = client_model.model_fashion_mnist()
 
     return model
-
-# pytorch로 변경 시 수정 필요 (Data format)
-# Load the dataset partitions
-def load_partition():
-    global status
-
-    # set data size
-    train_size = 6000
-    test_size = 2000
-
-    # Cifar 10 데이터셋 불러오기
-    (X_train, y_train), (X_test, y_test) = tf.keras.datasets.cifar10.load_data()
-
-    # client_num 값으로 데이터셋 나누기
-    (X_train, y_train) = X_train[status.FL_client_num * train_size:(status.FL_client_num + 1) * train_size], y_train[
-                                                                           status.FL_client_num * train_size:(status.FL_client_num + 1) * train_size]
-    (X_test, y_test) = X_test[status.FL_client_num * test_size:(status.FL_client_num + 1) * test_size], y_test[status.FL_client_num * test_size:(status.FL_client_num + 1) * test_size]
-
-    # class 설정
-    num_classes = 10
-
-    # one-hot encoding class 범위 지정
-    # Client마다 보유 Label이 다르므로 => 전체 label 수를 맞춰야 함
-    train_labels = to_categorical(y_train, num_classes)
-    test_labels = to_categorical(y_test, num_classes)
-
-    # 전처리
-    # train_features = X_train.astype('float32') / 255.0
-    # test_features = X_test.astype('float32') / 255.0
-
-
-    # data check => IID VS Non IID
-    # array -> list
-    y_list = y_train.tolist()
-    y_train_label = list(itertools.chain(*y_list))
-    counter = Counter(y_train_label)
-    # dict_counter = dict(counter)
-
-    # data check log 생성
-    # data_result = {"client_num": {status.FL_client_num}, "data_check": dict_counter}
-    # json_data_result = json.dumps(data_result)
-   
-    #     data_check_str = str({"client_num": %s, "label_0": %s, "label_1": %s, "label_2": %s, "label_3": %s, "label_4": %s, "label_5": %s, "label_6": %s, "label_7": %s, "label_8": %s, "label_9": %s}
-    #     %(status.FL_client_num, counter[0], counter[1], counter[2], counter[3], counter[4],
-    #     counter[5], counter[6], counter[7], counter[8], counter[9]))
-
-    for i in range(10):
-        data_check_dict = {"client_num": int(status.FL_client_num), "label_num": i, "data_size": int(counter[i])}
-        data_check_json = json.dumps(data_check_dict)
-        logging.info(f'data_check - {data_check_json}')
-
-    # print(f'client_num: {status.FL_client_num}, data_check: {dict_counter}')
-
-    # return (train_features, train_labels), (test_features, test_labels)
-    return (X_train, train_labels), (X_test, test_labels)
 
 
 # FL client 상태 확인
@@ -318,13 +245,26 @@ async def flower_client_start():
     logging.info('FL learning ready')
     global status
 
+    all_client_num = 5
+    dataset = 'cifar10'
+    skewed = False
+    balanced = False
+
     # 환자별로 partition 분리 => 개별 클라이언트 적용
-    (x_train, y_train), (x_test, y_test) = load_partition()
+    (x_train, y_train), (x_test, y_test), y_train_label = client_data.load_partition(all_client_num, status.FL_client_num, dataset, skewed, balanced)
     # await asyncio.sleep(30) # data download wait
     logging.info('data loaded')
 
+    # data check => IID VS Non IID
+    counter = Counter(y_train_label)
+
+    for i in range(10):
+        data_check_dict = {"client_num": int(status.FL_client_num), "label_num": i, "data_size": int(counter[i])}
+        data_check_json = json.dumps(data_check_dict)
+        logging.info(f'data_check - {data_check_json}')
+
     # model 생성
-    model = build_model()
+    model = build_model(dataset)
 
     # # local_model 유무 확인
     # local_list = os.listdir(f'/model')
