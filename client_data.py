@@ -81,12 +81,40 @@ def skewed_partition(X_train, y_train, X_test, y_test, skewed, balanced, FL_clie
 
     np.random.seed(FL_client_num)
     
+    # Client 마다 다른 label 부여
     if skewed == 'skewed one':
-        labels = 6
+        if FL_client_num == 0:
+            labels = 0
+        elif FL_client_num == 1:
+            labels = 1
+        elif FL_client_num == 2:
+            labels = 2
+        elif FL_client_num == 3:
+            labels = 3
+        elif FL_client_num == 4:
+            labels = 4
     elif skewed == 'skewed two':
-        labels = [6,9]
+        if FL_client_num == 0:
+            labels = [0,1]
+        elif FL_client_num == 1:
+            labels = [2,3]
+        elif FL_client_num == 2:
+            labels = [4,5]
+        elif FL_client_num == 3:
+            labels = [6,7]
+        elif FL_client_num == 4:
+            labels = [8,9]
     elif skewed =='skewed three':
-        labels = [6,9,0]
+        if FL_client_num == 0:
+            labels = [0,1,2]
+        elif FL_client_num == 1:
+            labels = [2,3,4]
+        elif FL_client_num == 2:
+            labels = [4,5,6]
+        elif FL_client_num == 3:
+            labels = [6,7,8]
+        elif FL_client_num == 4:
+            labels = [0,8,9]
         
     # select label index
     train_indexs = []
