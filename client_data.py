@@ -42,6 +42,7 @@ def data_partition(X_train, y_train, X_test, y_test, skewed, skewed_spec, balanc
     
     # only balanced/Imbalanced
     if skewed == False:
+        # Balanced dataset
         # Dataset size range for each FL Client
         train_range_size = int(len(y_train)/all_client_num)
         test_range_size = int(len(y_test)/all_client_num)
@@ -59,16 +60,37 @@ def data_partition(X_train, y_train, X_test, y_test, skewed, skewed_spec, balanc
         else: 
             # Imbalanced dataset
             # Random FL Client dataset size => Imbalanced
-            train_size = np.random.randint(train_first_size, train_next_size)
-            test_size = np.random.randint(test_first_size, test_next_size)
+            train_size_st = np.random.randint(train_first_size, train_first_size+100)
+            test_size_st = np.random.randint(test_first_size, test_first_size+100)
+            train_size_end = np.random.randint(train_size_st, train_next_size)
+            test_size_end = np.random.randint(test_size_st, test_next_size)
 
-            (X_train, y_train) = X_train[train_first_size:train_size], y_train[train_first_size:train_size]
-            (X_test, y_test) = X_test[test_first_size:test_size], y_test[test_first_size:test_size]
-    
+            (X_train, y_train) = X_train[train_size_st:train_size_end], y_train[train_size_st:train_size_end]
+            (X_test, y_test) = X_test[test_size_st:test_size_end], y_test[test_size_st:test_size_end]
+        
+        if dataset == 'cifar10':
+            pass
+        
+        else: # MNIST, FashionMNIST의 모델은 전이학습 모델이므로 3차원으로 설정
+            # 28X28 -> 32X32
+            # Pad with 2 zeros on left and right hand sides-
+            X_train = np.pad(X_train[:,], ((0,0),(2,2),(2,2)), 'constant')
+            X_test = np.pad(X_test[:,], ((0,0),(2,2),(2,2)), 'constant')
+
+
+            # 배열의 형상을 변경해서 차원 수를 3으로 설정
+            # # 전이학습 모델 input값 설정시 차원을 3으로 설정해줘야 함
+            X_train = tf.expand_dims(X_train, axis=3, name=None)
+            X_test = tf.expand_dims(X_test, axis=3, name=None)
+            X_train = tf.repeat(X_train, 3, axis=3)
+            X_test = tf.repeat(X_test, 3, axis=3)
+
+
     # balanced skewed/ imbalanced skewed
     else:
         print(f'skewed_spec: {skewed_spec}')
         (X_train, y_train), (X_test, y_test) = skewed_partition(X_train, y_train, X_test, y_test, skewed_spec, balanced, FL_client_num, all_client_num, dataset)
+
 
     return (X_train, y_train), (X_test, y_test)
     
@@ -157,12 +179,14 @@ def skewed_partition(X_train, y_train, X_test, y_test, skewed_spec, balanced, FL
     else: 
         # Imbalanced/Skewed dataset   
         # Random FL Client dataset size => Imbalanced
-        train_size = np.random.randint(train_first_size, train_next_size)
-        test_size = np.random.randint(test_first_size, test_next_size)
+        train_size_st = np.random.randint(train_first_size, train_first_size+100)
+        test_size_st = np.random.randint(test_first_size, test_first_size+100)
+        train_size_end = np.random.randint(train_size_st, train_next_size)
+        test_size_end = np.random.randint(test_size_st, test_next_size)
 
-        (X_train, y_train) = X_train[train_first_size:train_size], y_train[train_first_size:train_size]
-        (X_test, y_test) = X_test[test_first_size:test_size], y_test[test_first_size:test_size]
-
+        (X_train, y_train) = X_train[train_size_st:train_size_end], y_train[train_size_st:train_size_end]
+        (X_test, y_test) = X_test[test_size_st:test_size_end], y_test[test_size_st:test_size_end]
+        
     if dataset == 'cifar10':
         pass
     
