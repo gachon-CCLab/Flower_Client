@@ -224,13 +224,6 @@ async def flclientstart(background_tasks: BackgroundTasks, Server_IP: str):
     # 다음 global model 버전
     status.FL_next_gl_model = latest_gl_model_v + 1
 
-    # if wb_controller == 0:
-    #     # wandb login and init
-    #     wandb.login(key='6266dbc809b57000d78fb8b163179a0a3d6eeb37')
-    #     wandb.init(entity='ccl-fl', project='fl-client-news', name= 'client %s_V%s'%(client_num,next_gl_model), dir='/')
-
-    #     wb_controller = 1
-
     logging.info('bulid model')
 
     logging.info('FL start')
@@ -245,10 +238,11 @@ async def flower_client_start():
     logging.info('FL learning ready')
     global status
 
-    all_client_num = 5
-    dataset = 'cifar10'
-    skewed = False
-    balanced = False
+    # data setting parameter
+    all_client_num = 5 # total client number
+    dataset = 'cifar10' # dataset
+    skewed = False # data partition1: Each client has only one class (or two/three classes)
+    balanced = False # data partition2: Each client is randomly distributed in different sizes
 
     # 환자별로 partition 분리 => 개별 클라이언트 적용
     (x_train, y_train), (x_test, y_test), y_train_label = client_data.load_partition(all_client_num, status.FL_client_num, dataset, skewed, balanced)
@@ -335,10 +329,6 @@ async def flower_client_start():
 # client manager에서 train finish 정보 확인
 async def notify_fin():
     global status
-    
-    # wandb 종료
-    # wandb.finish()
-    # wb_controller = 0
 
     status.FL_client_start = False
 
@@ -352,12 +342,10 @@ async def notify_fin():
         logging.error(f'notify_fin error: {r.content}')
     return status
 
+
 # client manager에서 train fail 정보 확인
 async def notify_fail():
     global status
-
-    # wandb 종료
-    # wandb.finish()
 
     logging.info('notify_fail start')
 
