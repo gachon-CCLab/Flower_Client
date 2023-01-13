@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 # pytorch로 변경 시 수정 필요 (Data format)
 # Load the dataset partitions
-def data_load(all_client_num, FL_client_num, dataset, skewed, balanced):
+def data_load(all_client_num, FL_client_num, dataset, skewed, skewed_spec, balanced):
 
     # 데이터셋 불러오기
     if dataset == 'cifar10':
@@ -24,7 +24,7 @@ def data_load(all_client_num, FL_client_num, dataset, skewed, balanced):
     elif dataset == 'fashion_mnist':
         (X_train, y_train), (X_test, y_test) = tf.keras.datasets.fashion_mnist.load_data()
 
-    (X_train, y_train), (X_test, y_test) = data_partition(X_train, y_train, X_test, y_test, skewed, balanced, FL_client_num, all_client_num)
+    (X_train, y_train), (X_test, y_test) = data_partition(X_train, y_train, X_test, y_test, skewed, skewed_spec, balanced, FL_client_num, all_client_num)
         
 
 
@@ -36,7 +36,7 @@ def data_load(all_client_num, FL_client_num, dataset, skewed, balanced):
     return (X_train, y_train), (X_test, y_test)
 
 
-def data_partition(X_train, y_train, X_test, y_test, skewed, balanced, FL_client_num, all_client_num):
+def data_partition(X_train, y_train, X_test, y_test, skewed, skewed_spec, balanced, FL_client_num, all_client_num):
 
     np.random.seed(FL_client_num)
     
@@ -82,7 +82,7 @@ def skewed_partition(X_train, y_train, X_test, y_test, skewed, balanced, FL_clie
     np.random.seed(FL_client_num)
     
     # Client 마다 다른 label 부여
-    if skewed == 'skewed one':
+    if skewed == 'skewed_one':
         if FL_client_num == 0:
             labels = 0
         elif FL_client_num == 1:
@@ -93,7 +93,7 @@ def skewed_partition(X_train, y_train, X_test, y_test, skewed, balanced, FL_clie
             labels = 3
         elif FL_client_num == 4:
             labels = 4
-    elif skewed == 'skewed two':
+    elif skewed == 'skewed_two':
         if FL_client_num == 0:
             labels = [0,1]
         elif FL_client_num == 1:
@@ -104,7 +104,7 @@ def skewed_partition(X_train, y_train, X_test, y_test, skewed, balanced, FL_clie
             labels = [6,7]
         elif FL_client_num == 4:
             labels = [8,9]
-    elif skewed =='skewed three':
+    elif skewed =='skewed_three':
         if FL_client_num == 0:
             labels = [0,1,2]
         elif FL_client_num == 1:
