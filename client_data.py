@@ -24,7 +24,7 @@ def data_load(all_client_num, FL_client_num, dataset, skewed, skewed_spec, balan
     elif dataset == 'fashion_mnist':
         (X_train, y_train), (X_test, y_test) = tf.keras.datasets.fashion_mnist.load_data()
 
-    (X_train, y_train), (X_test, y_test) = data_partition(X_train, y_train, X_test, y_test, skewed, skewed_spec, balanced, FL_client_num, all_client_num)
+    (X_train, y_train), (X_test, y_test) = data_partition(X_train, y_train, X_test, y_test, skewed, skewed_spec, balanced, FL_client_num, all_client_num, dataset)
         
 
 
@@ -36,7 +36,7 @@ def data_load(all_client_num, FL_client_num, dataset, skewed, skewed_spec, balan
     return (X_train, y_train), (X_test, y_test)
 
 
-def data_partition(X_train, y_train, X_test, y_test, skewed, skewed_spec, balanced, FL_client_num, all_client_num):
+def data_partition(X_train, y_train, X_test, y_test, skewed, skewed_spec, balanced, FL_client_num, all_client_num, dataset):
 
     np.random.seed(FL_client_num)
     
@@ -67,16 +67,15 @@ def data_partition(X_train, y_train, X_test, y_test, skewed, skewed_spec, balanc
     
     # balanced skewed/ imbalanced skewed
     else:
-        dataset='cifar10'
-        skewed_spec='skewed two'
-
+        print(f'skewed_spec: {skewed_spec}')
         (X_train, y_train), (X_test, y_test) = skewed_partition(X_train, y_train, X_test, y_test, skewed_spec, balanced, FL_client_num, all_client_num, dataset)
 
     return (X_train, y_train), (X_test, y_test)
     
 
 # Client 마다 다른 label 부여
-def skewed_label(skewed_spec, FL_client_num):
+def skewed_label(FL_client_num, skewed_spec):
+    print(f'FL_client_num: {FL_client_num}, skewed_spec: {skewed_spec}')
     if skewed_spec == 'skewed_one':
         if FL_client_num == 0:
             labels = 0
@@ -111,6 +110,8 @@ def skewed_label(skewed_spec, FL_client_num):
         elif FL_client_num == 4:
             labels = [0,8,9]
 
+    print(f'labels: {labels}')
+
     return labels
 
 # Imbalanced/one class Skewed
@@ -118,14 +119,18 @@ def skewed_partition(X_train, y_train, X_test, y_test, skewed_spec, balanced, FL
 
     np.random.seed(FL_client_num)
     
-    labels = skewed_label(skewed_spec, FL_client_num)
+    labels = skewed_label(FL_client_num, skewed_spec)
         
     # select label index
     train_indexs = []
     test_indexs = []
-    for label in labels:
-        train_indexs.append(np.where(y_train == label)[0])
-        test_indexs.append(np.where(y_test == label)[0])
+    if skewed_spec == 'skewed_one':
+        train_indexs.append(np.where(y_train == labels)[0])
+        test_indexs.append(np.where(y_test == labels)[0])
+    else:
+        for label in labels:
+            train_indexs.append(np.where(y_train == label)[0])
+            test_indexs.append(np.where(y_test == label)[0])
     
     # label index list화 및 정렬 => label 분포있게 추출 가능
     train_index_list = np.sort(list(itertools.chain(*train_indexs)))
