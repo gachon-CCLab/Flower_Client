@@ -1,6 +1,7 @@
 
 import itertools
 import logging
+import random
 
 
 import tensorflow as tf
@@ -158,9 +159,18 @@ def skewed_partition(X_train, y_train, X_test, y_test, skewed_spec, balanced, FL
     train_index_list = np.sort(list(itertools.chain(*train_indexs)))
     test_index_list = np.sort(list(itertools.chain(*test_indexs)))
     
+    # set Skewed/Imbalanced data index 
+    random_train_index_list = random.shuffle(train_index_list)
+    random_test_index_list = random.shuffle(test_index_list)
+
+    # balanced label 
     (X_train, y_train) = X_train[train_index_list], y_train[train_index_list]
     (X_test, y_test) = X_test[test_index_list], y_test[test_index_list]
         
+    # imbalanced label
+    (X_train_rd, y_train_rd) = X_train[random_train_index_list], y_train[random_train_index_list]
+    (X_test_rd, y_test_rd) = X_test[random_test_index_list], y_test[random_test_index_list]
+
     # Dataset size range for each FL Client
     train_range_size = int(len(y_train)/all_client_num)
     test_range_size = int(len(y_test)/all_client_num)
@@ -184,9 +194,10 @@ def skewed_partition(X_train, y_train, X_test, y_test, skewed_spec, balanced, FL
         train_size_end = np.random.randint(train_size_st, train_next_size)
         test_size_end = np.random.randint(test_size_st, test_next_size)
 
-        (X_train, y_train) = X_train[train_size_st:train_size_end], y_train[train_size_st:train_size_end]
-        (X_test, y_test) = X_test[test_size_st:test_size_end], y_test[test_size_st:test_size_end]
-        
+        (X_train, y_train) = X_train_rd[train_size_st:train_size_end], y_train_rd[train_size_st:train_size_end]
+        (X_test, y_test) = X_test_rd[test_size_st:test_size_end], y_test_rd[test_size_st:test_size_end]
+    
+    
     if dataset == 'cifar10':
         pass
     
