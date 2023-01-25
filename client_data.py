@@ -133,7 +133,7 @@ def skewed_label(FL_client_num, skewed_spec):
         elif FL_client_num == 4:
             labels = [0,8,9]
 
-    print(f'labels: {labels}')
+    # print(f'labels: {labels}')
 
     return labels
 
@@ -155,49 +155,66 @@ def skewed_partition(X_train, y_train, X_test, y_test, skewed_spec, balanced, FL
             train_indexs.append(np.where(y_train == label)[0])
             test_indexs.append(np.where(y_test == label)[0])
     
-    # label index list화 및 정렬 => label 분포있게 추출 가능
-    train_index_list = np.sort(list(itertools.chain(*train_indexs)))
-    test_index_list = np.sort(list(itertools.chain(*test_indexs)))
+    train_index_list = list(itertools.chain(*train_indexs))
+    test_index_list = list(itertools.chain(*test_indexs))
     
-    # set Skewed/Imbalanced data index 
-    random_train_index_list = random.shuffle(train_index_list)
-    random_test_index_list = random.shuffle(test_index_list)
-
-    # balanced label 
-    (X_train, y_train) = X_train[train_index_list], y_train[train_index_list]
-    (X_test, y_test) = X_test[test_index_list], y_test[test_index_list]
-        
-    # imbalanced label
-    (X_train_rd, y_train_rd) = X_train[random_train_index_list], y_train[random_train_index_list]
-    (X_test_rd, y_test_rd) = X_test[random_test_index_list], y_test[random_test_index_list]
-
+#     print(f'all train_list: {len(train_index_list)}')
+    
     # Dataset size range for each FL Client
-    train_range_size = int(len(y_train)/all_client_num)
-    test_range_size = int(len(y_test)/all_client_num)
-
+    train_range_size = int(len(train_index_list)/all_client_num)
     train_first_size = train_range_size * FL_client_num
-    test_first_size = test_range_size * FL_client_num
-    
     train_next_size = train_first_size+train_range_size
+#     print(f'init train_range_size: {train_range_size}')
+#     print(f'init train_first_size: {train_first_size}')
+#     print(f'init train_next_size: {train_next_size}')
+    
+    
+    test_range_size = int(len(test_index_list)/all_client_num)    
+    test_first_size = test_range_size * FL_client_num
     test_next_size = test_first_size+test_range_size
-
+#     print(f'init test_range_size: {test_range_size}')
+#     print(f'init test_first_size: {test_first_size}')
+#     print(f'init test_next_size: {test_next_size}')
+    
     
     if balanced == True:
+        # label index list화 및 정렬 => label 분포있게 추출 가능
+        train_index_list = np.sort(train_index_list)
+        test_index_list = np.sort(test_index_list)
+
+        # balanced label 
+        (X_train, y_train) = X_train[train_index_list], y_train[train_index_list]
+        (X_test, y_test) = X_test[test_index_list], y_test[test_index_list]
+
         (X_train, y_train) = X_train[train_first_size:train_next_size], y_train[train_first_size:train_next_size]
         (X_test, y_test) = X_test[test_first_size:test_next_size], y_test[test_first_size:test_next_size]
         
-    else: 
+    else:
+        # set Skewed/Imbalanced data random index 
+        random.shuffle(train_index_list)
+        random.shuffle(test_index_list)
+            
+        # imbalanced label
+        (X_train, y_train) = X_train[train_index_list], y_train[train_index_list]
+        (X_test, y_test) = X_test[test_index_list], y_test[test_index_list]
+
         # Imbalanced/Skewed dataset   
         # Random FL Client dataset size => Imbalanced
-        train_size_st = np.random.randint(train_first_size, train_first_size+100)
+        train_size_st = np.random.randint(train_first_size, train_first_size+300)
+        train_size_end = np.random.randint(train_size_st+300, train_next_size-300)
+        # print(f'random train_size_st: {train_size_st}')
+        # print(f'random train_size_end: {train_size_end}')
+        
         test_size_st = np.random.randint(test_first_size, test_first_size+100)
-        train_size_end = np.random.randint(train_size_st, train_next_size)
-        test_size_end = np.random.randint(test_size_st, test_next_size)
+        test_size_end = np.random.randint(test_size_st, test_next_size-100)
+        # print(f'random test_size_st: {test_size_st}')
+        # print(f'random test_size_end: {test_size_end}')
 
-        (X_train, y_train) = X_train_rd[train_size_st:train_size_end], y_train_rd[train_size_st:train_size_end]
-        (X_test, y_test) = X_test_rd[test_size_st:test_size_end], y_test_rd[test_size_st:test_size_end]
-    
-    
+        (X_train, y_train) = X_train[train_size_st:train_size_end], y_train[train_size_st:train_size_end]
+        (X_test, y_test) = X_test[test_size_st:test_size_end], y_test[test_size_st:test_size_end]
+        
+#         print(f'random next train: {y_train}')
+
     if dataset == 'cifar10':
         pass
     
