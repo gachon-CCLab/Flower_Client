@@ -50,10 +50,10 @@ def build_model(dataset):
         model = client_model.model_cnn()
 
     elif dataset == 'mnist':
-        model = client_model.model_mnist()
+        model = client_model.model_ResNet50()
     
     elif dataset == 'fashion_mnist':
-        model = client_model.model_fashion_mnist()
+        model = client_model.model_VGG16()
 
     return model
 
@@ -241,10 +241,10 @@ async def flower_client_start():
 
     # data setting parameter
     all_client_num = 5 # total client number
-    dataset = 'cifar10' # dataset
-    skewed = True # data partition1: Each client has only one class (or two/three classes)
+    dataset = 'mnist' # dataset
+    skewed = False # data partition1: Each client has only one class (or two/three classes)
     skewed_spec = 'skewed_three'
-    balanced = False # data partition2: Each client is randomly distributed in different sizes
+    balanced = True # data partition2: Each client is randomly distributed in different sizes
 
     # 환자별로 partition 분리 => 개별 클라이언트 적용
     (x_train, y_train), (x_test, y_test) = client_data.data_load(all_client_num, status.FL_client_num, dataset, skewed, skewed_spec, balanced)
@@ -254,10 +254,15 @@ async def flower_client_start():
     # await asyncio.sleep(30) # data download wait
     logging.info('data loaded')
 
-    # data check => IID VS Non IID
-    y_list = y_train.tolist()
-    y_train_label = list(itertools.chain(*y_list))
-    counter = Counter(y_train_label)
+    # data label check
+    if dataset =='cifar10':
+        y_list = y_train.tolist()
+        y_train_label = list(itertools.chain(*y_list))
+        counter = Counter(y_train_label)
+    elif dataset=='mnist':
+        counter = Counter(y_train)
+    elif dataset=='fashion_mnist':
+        counter = Counter(y_train)
 
     for i in range(10):
         data_check_dict = {"client_num": int(status.FL_client_num), "label_num": i, "data_size": int(counter[i])}
