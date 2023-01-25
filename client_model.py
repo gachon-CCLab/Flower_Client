@@ -49,7 +49,7 @@ def model_VGG16():
     # loss -> sparse_categorical_crossentropy
     model = tf.keras.Model(inputs = model_VGG16.input, outputs = predictions)
     model.compile(optimizer='adam', loss=tf.keras.losses.sparse_categorical_crossentropy, metrics=['accuracy'])
-    model.summary()
+    # model.summary()
 
     return model
 
@@ -68,6 +68,6 @@ def model_ResNet50():
     # 모델 학습 후 summary로 확인
     model = tf.keras.Model(inputs = model_Res.input, outputs = predictions)
     model.compile(optimizer='adam', loss=tf.keras.losses.sparse_categorical_crossentropy, metrics=['accuracy'])
-    model.summary()
+    # model.summary()
 
     return model
