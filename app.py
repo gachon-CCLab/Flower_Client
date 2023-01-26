@@ -242,8 +242,8 @@ async def flower_client_start():
     # data setting parameter
     all_client_num = 5 # total client number
     dataset = 'mnist' # dataset
-    skewed = False # data partition1: Each client has only one class (or two/three classes)
-    skewed_spec = 'skewed_three'
+    skewed = True # data partition1: Each client has only one class (or two/three classes)
+    skewed_spec = 'skewed_one'
     balanced = False # data partition2: Each client is randomly distributed in different sizes
 
     # 환자별로 partition 분리 => 개별 클라이언트 적용
