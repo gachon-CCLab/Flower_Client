@@ -244,7 +244,7 @@ async def flower_client_start():
     dataset = 'mnist' # dataset
     skewed = True # data partition1: Each client has only one class (or two/three classes)
     skewed_spec = 'skewed_one'
-    balanced = False # data partition2: Each client is randomly distributed in different sizes
+    balanced = True # data partition2: Each client is randomly distributed in different sizes
 
     # 환자별로 partition 분리 => 개별 클라이언트 적용
     (x_train, y_train), (x_test, y_test) = client_data.data_load(all_client_num, status.FL_client_num, dataset, skewed, skewed_spec, balanced)
