@@ -28,10 +28,10 @@ logger = logging.getLogger(__name__)
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
 # CPU만 사용
-os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+# os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
 # GPU 사용
-# os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 
 # client pod number 추출
@@ -244,7 +244,7 @@ async def flower_client_start():
     dataset = 'mnist' # dataset
     skewed = False # data partition1: Each client has only one class (or two/three classes)
     skewed_spec = 'skewed_three'
-    balanced = True # data partition2: Each client is randomly distributed in different sizes
+    balanced = False # data partition2: Each client is randomly distributed in different sizes
 
     # 환자별로 partition 분리 => 개별 클라이언트 적용
     (x_train, y_train), (x_test, y_test) = client_data.data_load(all_client_num, status.FL_client_num, dataset, skewed, skewed_spec, balanced)
