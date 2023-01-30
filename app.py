@@ -243,7 +243,7 @@ async def flower_client_start():
     all_client_num = 5 # total client number
     dataset = 'fashion_mnist' # dataset
     skewed = True # data partition1: Each client has only one class (or two/three classes)
-    skewed_spec = 'skewed_one'
+    skewed_spec = 'skewed_two'
     balanced = True # data partition2: Each client is randomly distributed in different sizes
 
     # Client Data
